@@ -1,0 +1,39 @@
+SELECT * FROM employees WHERE salary > (SELECT AVG(salary) FROM employees);
+
+SELECT * FROM employees WHERE dept_id = (SELECT dept_id FROM employees WHERE emp_id = 101);
+
+SELECT * FROM products WHERE price > (SELECT MIN(price) FROM products);
+
+WITH avg_amount_table AS(
+	SELECT AVG(amount) AS avg_amount FROM orders
+) SELECT customer_id, SUM(amount) AS total_amount FROM orders GROUP BY customer_id HAVING SUM(amount) > (SELECT avg_amount FROM avg_amount_table);
+
+WITH dept_wise_avg_salary AS(
+	SELECT dept_id, AVG(salary) AS avg_salary FROM employees GROUP BY dept_id
+) SELECT * FROM employees WHERE dept_id = (SELECT dept_id FROM dept_wise_avg_salary) AND salary > (SELECT avg_salary FROM dept_wise_avg_salary);
+
+SELECT * FROM students WHERE marks > (SELECT AVG(marks) FROM students);
+
+WITH dept_wise_highest_paid AS(
+	SELECT dept_id, MAX(salary) AS highest_salary FROM employees GROUP BY dept_id
+) SELECT * FROM employees WHERE dept_id = (SELECT dept_id FROM dept_wise_highest_paid) AND salary = (SELECT highest_salary FROM dept_wise_highest_paid);
+
+WITH first_day_buyer AS(
+	SELECT c.customer_id, c.signup_date, o.order_date FROM customers c JOIN orders o ON c.customer_id = o.customer_id
+) SELECT customer_id FROM first_day_buyer WHERE signup_date = (SELECT order_date FROM first_day_buyer) AND customer_id = (SELECT customer_id FROM first_day_buyer);
+
+WITH avg_sales_all_products AS(
+	SELECT AVG(amount) AS avg_amount FROM sales
+) SELECT product_id, SUM(amount) AS total_sales FROM sales GROUP BY product_id HAVING SUM(amount) > (SELECT avg_amount FROM avg_sales_all_products);
+
+WITH first_transactions AS(
+	SELECT user_id, txn_date, amount FROM transactions ORDER BY txn_dates ASC LIMIT 1
+) SELECT * FROM first_transactions WHERE amount > (SELECT AVG(amount) FROM transactions);
+
+WITH min_salary_more_than AS(
+	SELECT dept_id, MIN(salary) AS lowest_salary FROM employees GROUP BY dept_id
+) SELECT dept_id FROM min_salary_more_than WHERE lowest_salary > 40000;
+
+WITH next_log_dates AS(
+	SELECT user_id, log_date, LAG(log_date) OVER(PARTITION BY user_id ORDER BY log_date DESC) AS next_log_date FROM users
+) SELECT user_id FROM next_log_dates WHERE DATEDIFF(log_date, next_log_date) <= 1;
