@@ -1,0 +1,176 @@
+Absolutely 👍
+I’ll give you a **well-structured progression of SQL subquery problems** — from **very easy ➜ interview-hard ➜ data-engineering level**.
+
+👉 **Do NOT jump ahead.**
+Solve them **in order**.
+I’ll review your answers and level you up step by step.
+
+---
+
+# 🔹 LEVEL 1 — **Easy Subqueries** (Warm-up)
+
+### **Q1.**
+
+From table:
+
+```
+employees(emp_id, emp_name, salary)
+```
+
+Find employees who earn **more than the average salary**.
+
+---
+
+### **Q2.**
+
+From table:
+
+```
+employees(emp_id, emp_name, dept_id)
+```
+
+Find employees who work in the **same department as employee with emp_id = 101**.
+
+---
+
+### **Q3.**
+
+From table:
+
+```
+products(product_id, price)
+```
+
+Find products whose price is **higher than the minimum price**.
+
+---
+
+# 🔹 LEVEL 2 — **Medium Subqueries** (Interview-Core)
+
+### **Q4.**
+
+From table:
+
+```
+orders(order_id, customer_id, amount)
+```
+
+Find customers whose **total order amount is greater than the average order amount of all customers**.
+
+---
+
+### **Q5.**
+
+From table:
+
+```
+employees(emp_id, emp_name, dept_id, salary)
+```
+
+Find employees who earn **more than the average salary of their department**.
+
+---
+
+### **Q6.**
+
+From table:
+
+```
+students(student_id, marks)
+```
+
+Find students who scored **above the class average**.
+
+---
+
+# 🔹 LEVEL 3 — **Hard Subqueries** (Advanced Interview)
+
+### **Q7.**
+
+From table:
+
+```
+employees(emp_id, emp_name, dept_id, salary)
+```
+
+Find the **highest paid employee in each department**.
+
+---
+
+### **Q8.**
+
+From table:
+
+```
+orders(order_id, customer_id, order_date)
+```
+
+Find customers who placed an order on **their first day of signup**.
+(Table `customers(customer_id, signup_date)`)
+
+---
+
+### **Q9.**
+
+From table:
+
+```
+sales(order_date, product_id, amount)
+```
+
+Find products whose **total sales are greater than the overall average sales across all products**.
+
+---
+
+# 🔹 LEVEL 4 — **Very Hard Subqueries** (Data-Engineering Level)
+
+### **Q10.**
+
+From table:
+
+```
+transactions(user_id, txn_date, amount)
+```
+
+Find users whose **first transaction amount is greater than their average transaction amount**.
+
+---
+
+### **Q11.**
+
+From table:
+
+```
+employees(emp_id, emp_name, dept_id, salary)
+```
+
+Find departments where **all employees earn more than 40,000**.
+
+---
+
+### **Q12.**
+
+From table:
+
+```
+logs(user_id, log_date)
+```
+
+Find users who **logged in on every day** present in the logs table.
+
+---
+
+## 📌 Rules
+
+* Use **subqueries only** (no window functions for now)
+* Write **clean, readable SQL**
+* Any SQL dialect is allowed
+
+---
+
+### 👉 Next Step
+
+Reply with **LEVEL 1 answers (Q1–Q3)** first.
+I will **review, correct, and then unlock LEVEL 2**.
+
+You’re doing very well — this sequence will **push you into Advanced SQL** 💪
