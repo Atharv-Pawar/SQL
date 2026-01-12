@@ -17,7 +17,7 @@ SELECT dept_id FROM employees GROUP BY dept_id HAVING AVG(salary) > 60000;
 SELECT dept_id, GROUP_CONCAT(emp_name ORDER BY emp_name ASC) AS emp_name FROM employees GROUP BY dept_id;
 
 -- Q6. From table: orders(order_id, customer_id) Return customer-wise order IDs, separated by commas.
-SELECT customer_id, GROUP_CONCAT(order_id) FROM orders GROUP BY orders;
+SELECT customer_id, GROUP_CONCAT(order_id) FROM orders GROUP BY customer_id;
 
 --🔹 LEVEL 4 — GROUP BY + GROUP_CONCAT (Tricky)
 -- Q7. From table: employees(emp_id, emp_name, dept_id) Return only those departments where more than 2 employees exist, along with a comma-separated list of employee names.
