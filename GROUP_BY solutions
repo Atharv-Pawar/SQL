@@ -1,0 +1,34 @@
+--🔹 LEVEL 1 — Basic GROUP BY
+-- Q1. From table: employees(emp_id, dept_id) Find the number of employees in each department.
+SELECT dept_id, COUNT(*) AS number_of_employees FROM employees GROUP BY dept_id;
+
+-- Q2.From table: sales(product_id, amount) Find the total sales per product.
+SELECT product_id, SUM(amount) total_sales FROM sales GROUP BY product_id;
+
+--🔹 LEVEL 2 — GROUP BY + HAVING (Tricky)
+-- Q3. From table: orders(order_id, customer_id, amount) Find customers who have placed more than 5 orders.
+SELECT customer_id, COUNT(order_id) AS number_of_orders FROM orders GROUP BY customer_id HAVING COUNT(order_id) > 5;
+
+-- Q4.From table: employees(emp_id, dept_id, salary) Find departments where the average salary is greater than 60,000.
+SELECT dept_id FROM employees GROUP BY dept_id HAVING AVG(salary) > 60000;
+
+--🔹 LEVEL 3 — GROUP_CONCAT (Interview Favorite)
+-- Q5. From table: employees(emp_id, emp_name, dept_id) Return department-wise employee names, sorted alphabetically within each department.
+SELECT dept_id, GROUP_CONCAT(emp_name ORDER BY emp_name ASC) AS emp_name FROM employees GROUP BY dept_id;
+
+-- Q6. From table: orders(order_id, customer_id) Return customer-wise order IDs, separated by commas.
+SELECT customer_id, GROUP_CONCAT(order_id) FROM orders GROUP BY orders;
+
+--🔹 LEVEL 4 — GROUP BY + GROUP_CONCAT (Tricky)
+-- Q7. From table: employees(emp_id, emp_name, dept_id) Return only those departments where more than 2 employees exist, along with a comma-separated list of employee names.
+SELECT dept_id, GROUP_CONCAT(emp_name) FROM employees GROUP BY dept_id HAVING COUNT(*) > 2;
+
+-- Q8. From table: students(student_id, subject, marks) Return subject-wise student IDs, but only include students who scored more than 70.
+SELECT subject, GROUP_CONCAT(student_id) FROM students WHERE marks > 70 GROUP BY subject;
+
+--🔹 LEVEL 5 — Interview Trap Questions
+-- Q9. From table: orders(order_id, customer_id, order_date) Return customer-wise order dates, sorted by order_date.
+SELECT customer_id, GROUP_CONCAT(order_date ORDER BY order_date ASC) FROM orders GROUP BY customer_id;
+
+--Q10. From table: employees(emp_id, emp_name, dept_id) Return department-wise employee names, but exclude departments that have only one employee.
+SELECT dept_id, GROUP_CONCAT(emp_name) FROM employees GROUP BY dept_id HAVING COUNT(*) > 1;
