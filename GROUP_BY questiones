@@ -1,0 +1,95 @@
+🔹 LEVEL 1 — Basic GROUP BY
+Q1.
+
+From table:
+
+employees(emp_id, dept_id)
+
+
+Find the number of employees in each department.
+
+Q2.
+
+From table:
+
+sales(product_id, amount)
+
+
+Find the total sales per product.
+
+🔹 LEVEL 2 — GROUP BY + HAVING (Tricky)
+Q3.
+
+From table:
+
+orders(order_id, customer_id, amount)
+
+
+Find customers who have placed more than 5 orders.
+
+Q4.
+
+From table:
+
+employees(emp_id, dept_id, salary)
+
+
+Find departments where the average salary is greater than 60,000.
+
+🔹 LEVEL 3 — GROUP_CONCAT (Interview Favorite)
+Q5.
+
+From table:
+
+employees(emp_id, emp_name, dept_id)
+
+
+Return department-wise employee names, sorted alphabetically within each department.
+
+Q6.
+
+From table:
+
+orders(order_id, customer_id)
+
+
+Return customer-wise order IDs, separated by commas.
+
+🔹 LEVEL 4 — GROUP BY + GROUP_CONCAT (Tricky)
+Q7.
+
+From table:
+
+employees(emp_id, emp_name, dept_id)
+
+
+Return only those departments where more than 2 employees exist,
+along with a comma-separated list of employee names.
+
+Q8.
+
+From table:
+
+students(student_id, subject, marks)
+
+
+Return subject-wise student IDs, but only include students who scored more than 70.
+
+🔹 LEVEL 5 — Interview Trap Questions
+Q9.
+
+From table:
+
+orders(order_id, customer_id, order_date)
+
+
+Return customer-wise order dates, sorted by order_date.
+
+Q10.
+
+From table:
+
+employees(emp_id, emp_name, dept_id)
+
+
+Return department-wise employee names, but exclude departments that have only one employee.
