@@ -1,0 +1,63 @@
+-- 🔹 LEVEL 1 — Basic JOINs
+-- Q1. INNER JOIN
+-- Tables:
+-- employees(emp_id, emp_name, dept_id)
+-- departments(dept_id, dept_name)
+-- Write a query to fetch employee name and department name.
+
+-- Q2. LEFT JOIN
+--Tables:
+--employees(emp_id, emp_name, manager_id)
+-- Write a query to fetch all employees and their manager names. (Manager is also in the same table).
+
+--🔹 LEVEL 2 — JOIN + WHERE vs ON (Interview Trap)
+--Q3.
+--Tables:
+--orders(order_id, customer_id, amount)
+--customers(customer_id, city)
+--Fetch total order amount per city, but include only orders with amount > 1000.
+
+--Q4.
+--Tables:
+--employees(emp_id, emp_name, dept_id)
+--departments(dept_id, dept_name)
+--Fetch all departments, even if no employees are assigned.
+
+--🔹 LEVEL 3 — Multi-table JOINs
+--Q5.
+--Tables:
+--students(student_id, student_name)
+--enrollments(student_id, course_id)
+--courses(course_id, course_name)
+--Fetch student names and course names.
+
+--Q6.
+--Tables:
+--orders(order_id, customer_id)
+--payments(payment_id, order_id, amount)
+--Fetch orders that do not have any payments.
+
+--🔹 LEVEL 4 — Self JOINs (Very Important)
+--Q7.
+--Table:
+--employees(emp_id, emp_name, manager_id)
+--Fetch employee name and manager name 👉 Include employees without managers.
+
+--🔹 LEVEL 5 — Real Interview JOIN Problems
+--Q8.
+--Tables:
+--orders(order_id, customer_id, order_date)
+--returns(order_id, return_date)
+--Fetch orders that were never returned.
+
+--Q9.
+--Tables:
+--employees(emp_id, emp_name, dept_id)
+--salaries(emp_id, salary)
+--Fetch employee names whose salary is greater than the average salary.
+
+--Q10.
+--Tables:
+--products(product_id, product_name)
+--order_items(order_id, product_id, quantity)
+--Fetch products that were never ordered.
