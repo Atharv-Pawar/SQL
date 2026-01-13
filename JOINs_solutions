@@ -10,7 +10,13 @@ SELECT e.emp_name AS employee_name, d.dept_name AS department_name FROM employee
 --Tables:
 --employees(emp_id, emp_name, manager_id)
 -- Write a query to fetch all employees and their manager names. (Manager is also in the same table).
-SELECT e.emp_name AS employee_name, m.emp_name AS manager_name FROM employees e LEFT JOIN employees m ON e.emp_id = m.manager_id;
+-- SELECT e.emp_name AS employee_name, m.emp_name AS manager_name FROM employees e LEFT JOIN employees m ON e.emp_id = m.manager_id;❌
+
+SELECT e.emp_name AS employee_name, m.emp_name AS manager_name
+FROM employees e
+LEFT JOIN employees m
+ON e.manager_id = m.emp_id;
+
 
 --🔹 LEVEL 2 — JOIN + WHERE vs ON (Interview Trap)
 --Q3.
@@ -25,9 +31,11 @@ SELECT c.city, SUM(o.amount) AS total_order_amount FROM orders o JOIN customers 
 --employees(emp_id, emp_name, dept_id)
 --departments(dept_id, dept_name)
 --Fetch all departments, even if no employees are assigned.
-SELECT e.emp_id, e.emp_name, e.dept_id, d.dept_name FROM employees e LEFT JOIN departments d ON e.dept_id = d.dept_id
-UNION ALL 
-SELECT e.emp_id, e.emp_name, e.dept_id, d.dept_name FROM employees e RIGHT JOIN departments d ON e.dept_id = d.dept_id;
+SELECT d.dept_id, d.dept_name, e.emp_name
+FROM departments d
+LEFT JOIN employees e
+ON d.dept_id = e.dept_id;
+
 
 --🔹 LEVEL 3 — Multi-table JOINs
 --Q5.
@@ -45,16 +53,25 @@ JOIN courses c ON e.course_id = c.course_id;
 --orders(order_id, customer_id)
 --payments(payment_id, order_id, amount)
 --Fetch orders that do not have any payments.
-SELECT o.order_id, p.payment_id FROM orders o 
-RIGHT JOIN payments p ON o.order_id = p.order_id 
-WHERE p.payment_id IS NULL;
+SELECT o.order_id
+FROM orders o
+LEFT JOIN payments p
+ON o.order_id = p.order_id
+WHERE p.order_id IS NULL;
+
 
 --🔹 LEVEL 4 — Self JOINs (Very Important)
 --Q7.
 --Table:
 --employees(emp_id, emp_name, manager_id)
 --Fetch employee name and manager name 👉 Include employees without managers.
-SELECT e.emp_name AS Employee, m.emp_name AS Manager FROM employees e LEFT JOIN employees m ON e.emp_id = m.manager_id;
+--SELECT e.emp_name AS Employee, m.emp_name AS Manager FROM employees e LEFT JOIN employees m ON e.emp_id = m.manager_id;❌
+
+SELECT e.emp_name AS employee, m.emp_name AS manager
+FROM employees e
+LEFT JOIN employees m
+ON e.manager_id = m.emp_id;
+
 
 --🔹 LEVEL 5 — Real Interview JOIN Problems
 --Q8.
@@ -76,4 +93,10 @@ SELECT e.emp_name FROM employees e JOIN salaries s ON e.emp_id = s.emp_id WHERE 
 --products(product_id, product_name)
 --order_items(order_id, product_id, quantity)
 --Fetch products that were never ordered.
-SELECT p.product_id FROM products p RIGHT JOIN order_items o ON p.product_id = o.product_id WHERE order_id IS NULL; 
+-- SELECT p.product_id FROM products p RIGHT JOIN order_items o ON p.product_id = o.product_id WHERE order_id IS NULL;❌
+
+SELECT p.product_id, p.product_name
+FROM products p
+LEFT JOIN order_items o
+ON p.product_id = o.product_id
+WHERE o.product_id IS NULL;
