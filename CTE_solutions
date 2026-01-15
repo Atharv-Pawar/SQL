@@ -20,7 +20,7 @@ WITH cte1 AS (
 	GROUP BY dept_id
 	) SELECT dept_id FROM cte1 WHERE avg_salary_per_dept > 60000;
 
--- Q4. From table sales(order_date, product_id, amount) Use a CTE to calculate year-wise total sales, then return only the year with the highest total sales.
+-- Q4. From table sales(order_date, product_id, amount) Use a CTE to calculate year-wise total sales, then return only the year with the highest total sales. ✅ Correct
 WITH yearWiseSales AS (
 	SELECT EXTRACT(YEAR FROM order_date)AS year_name, SUM(amount) AS total_sales
 	FROM sales
@@ -35,19 +35,21 @@ WITH yearWiseSales AS (
 -- Tables:
 -- employees(emp_id, emp_name, dept_id)
 -- departments(dept_id, dept_name)
--- Use a CTE to prepare department-wise employee count, then join it to return: dept_name, employee_count.
+-- Use a CTE to prepare department-wise employee count, then join it to return: dept_name, employee_count. ✅ Correct
 WITH employees_in_dept AS (
 	SELECT d.dept_id, d.dept_name, COUNT(*) AS employees_count
 	FROM departments d 
 	JOIN employees e ON d.dept_id = e.dept_id
 	GROUP BY d.dept_id, d.dept_name
 	) SELECT dept_name, employees_count FROM employees_in_dept;
+--📌 Minor note (not an error):
+--If the question asked for all departments, even empty ones, this would need a LEFT JOIN.
 
 -- Q6.
 -- Tables:
 -- orders(order_id, customer_id)
 -- payments(payment_id, order_id, amount)
--- Use a CTE to find orders that have payments, then return orders that do NOT exist in that CTE.
+-- Use a CTE to find orders that have payments, then return orders that do NOT exist in that CTE. ✅ Correct
 /*
 WITH orders_with_payments AS (
 	SELECT o.order_id
@@ -60,7 +62,11 @@ WITH orders_with_payments AS (
 	SELECT o.order_id
 	FROM orders o 
 	JOIN payments p ON o.order_id = p.order_id
-	) SELECT order_id FROM orders WHERE order_id NOT IN (SELECT order_id FROM orders_with_payments);;
+	) SELECT order_id FROM orders WHERE order_id NOT IN (SELECT order_id FROM orders_with_payments);
+	
+-- ⚠️ Important interview note
+-- NOT IN breaks if subquery returns NULL.
+-- Best-practice solution is NOT EXISTS, but your logic is acceptable for learning.
 	
 
 --🔹 LEVEL 4 — CTE + Window Functions
