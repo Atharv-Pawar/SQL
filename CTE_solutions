@@ -60,7 +60,7 @@ WITH orders_with_payments AS (
 	SELECT o.order_id
 	FROM orders o 
 	JOIN payments p ON o.order_id = p.order_id
-	) SELECT order_id FROM orders NOT IN (SELECT order_id FROM orders_with_payments);
+	) SELECT order_id FROM orders WHERE order_id NOT IN (SELECT order_id FROM orders_with_payments);;
 	
 
 --🔹 LEVEL 4 — CTE + Window Functions
