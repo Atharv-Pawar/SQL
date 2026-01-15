@@ -1,0 +1,106 @@
+--🔹 LEVEL 1 — CTE Basics
+-- Q1. From table employees(emp_id, emp_name, salary) Use a CTE to calculate the average salary, then return employees who earn more than the average.
+WITH average_salary AS (
+	SELECT AVG(salary) AS avg_salary
+	FROM employees
+	) SELECT emp_id, emp_name FROM employees WHERE salary > (SELECT avg_salary FROM average_salary);
+
+-- Q2. From table orders(order_id, customer_id, amount) Use a CTE to calculate total order amount per customer, then return customers whose total amount > 50,000.
+WITH t AS (
+	SELECT customer_id, SUM(amount) AS total_amount
+	FROM orders
+	GROUP BY customer_id
+	) SELECT customer_id FROM t WHERE total_amount > 50000;
+
+--🔹 LEVEL 2 — CTE + GROUP BY
+-- Q3. From table employees(emp_id, dept_id, salary) Use a CTE to calculate average salary per department, then return department IDs where the average salary is greater than 60,000.
+WITH cte1 AS (
+	SELECT dept_id, AVG(salary) AS avg_salary_per_dept
+	FROM employees
+	GROUP BY dept_id
+	) SELECT dept_id FROM cte1 WHERE avg_salary_per_dept > 60000;
+
+-- Q4. From table sales(order_date, product_id, amount) Use a CTE to calculate year-wise total sales, then return only the year with the highest total sales.
+WITH yearWiseSales AS (
+	SELECT order_date, SUM(amount) AS total_sales
+	FROM sales
+	GROUP BY EXTRACT(YEAR FROM order_date)
+	) SELECT EXTRACT(YEAR FROM order_date) FROM yearWiseSales WHERE total_sales = (
+		SELECT MAX(total_sales) 
+		FROM yearWiseSales
+		);
+
+--🔹 LEVEL 3 — CTE + JOIN (Interview Core)
+-- Q5.
+-- Tables:
+-- employees(emp_id, emp_name, dept_id)
+-- departments(dept_id, dept_name)
+-- Use a CTE to prepare department-wise employee count, then join it to return: dept_name, employee_count.
+WITH employees_in_dept AS (
+	SELECT d.dept_id, d.dept_name, COUNT(e.*) AS employees_count
+	FROM department d 
+	JOIN employees e ON d.dept_id = e.dept_id
+	GROUP BY e.dept_id
+	) SELECT dept_name, employees_count FROM employees_in_dept;
+
+-- Q6.
+-- Tables:
+-- orders(order_id, customer_id)
+-- payments(payment_id, order_id, amount)
+-- Use a CTE to find orders that have payments, then return orders that do NOT exist in that CTE.
+WITH orders_with_payments AS (
+	SELECT o.order_id
+	FROM orders o
+	JOIN payments p ON o.order_id = p.order_id
+	) SELECT order_id FROM orders WHERE order_id <> (SELECT order_id FROM orders_with_payments);
+	
+
+--🔹 LEVEL 4 — CTE + Window Functions
+-- Q7.
+-- From table employees(emp_id, dept_id, salary) Use a CTE with window functions to return top 2 highest-paid employees in each department.
+WITH highest_paid AS (
+	SELECT dept_id, DISTINCT salary, ROW_NUMBER() OVER(PARTITION BY dept_id ORDER BY salary DESC) AS r
+	FROM employees
+	) SELECT dept_id, salary FROM highest_paid WHERE r >= 2;
+
+-- Q8. From table transactions(user_id, txn_date, amount) Use a CTE to calculate running total of amount per user, ordered by transaction date.
+-- I know the logic behind running total it is same as calculation of cumulative frequency in statistics but I forgot the syntax behind implementing this logic using SQL 
+
+--🔹 LEVEL 5 — Recursive & Advanced CTEs (Very Hard)
+-- Q9. From table employees(emp_id, emp_name, manager_id) Use a recursive CTE to return the complete reporting hierarchy for each employee.
+WITH t AS (
+	SELECT e.emp_name AS Employee, m.emp_name AS Manager 
+	FROM employeees e
+	JOIN employees m 
+	ON e.manager_id = m.emp_id
+	) SELECT Employee, Manager FROM t;
+
+-- Q10. From table logs(user_id, log_date) Use a CTE to find users who logged in for at least 5 consecutive days.
+WITH t AS (
+	SELECT user_id, COUNT(*) AS logged_in FROM logs
+	GROUP BY user_id
+	HAVING COUNT(DISTINCT log_date) = (
+		SELECT HAVING COUNT(log_date)
+		FROM logs 
+		) t2
+	) SELECT user_id FROM t WHERE loggged_in >= 5;
+
+--🔹 BONUS — Data Engineering Level
+-- Q11. From table sales(order_date, product_id, amount)
+-- Use multiple CTEs to:
+--Calculate monthly sales per product
+--Calculate month-over-month growth
+--Return products where growth is negative in any month
+WITH monthlySales AS (
+	SELECT EXTRACT(YEAR|MONTH FROM order_date) AS YYYY-MM, product_id, SUM(amount) AS total_sales 
+	FROM sales 
+	GROUP BY EXTRACT(YEAR|MONTH FROM order_date), product_id
+	) WITH monthlyGrowth AS (
+		SELECT YYYY-MM, product_id, total_sales, ROW_NUMBER() OVER(PARTITION BY YYYY-MM ORDER BY EXTRACT(MONTH FROM YYYY-MM) ASC) AS rn
+		FROM monthlySales 
+		) SELECT product_id 
+		FROM monthlyGrowth 
+		WHERE total_sales < (
+			SELECT total_sales 
+			FROM monthlyGrowth
+			) AND rn > 2 AND rn = rn-1;
