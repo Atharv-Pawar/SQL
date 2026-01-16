@@ -1,0 +1,120 @@
+--🔹 LEVEL 1 — Basic CASE WHEN
+/*
+Q1.
+From table employees(emp_id, salary)
+Classify employees as:
+
+'High' if salary ≥ 80,000
+
+'Medium' if salary between 40,000 and 79,999
+
+'Low' otherwise
+*/
+
+/*
+Q2.
+From table students(student_id, marks)
+Assign grades:
+
+'A' if marks ≥ 90
+
+'B' if marks between 75 and 89
+
+'C' if marks between 50 and 74
+
+'Fail' otherwise
+*/
+
+--🔹 LEVEL 2 — CASE WHEN + GROUP BY
+/*
+Q3.
+From table orders(order_id, amount)
+Count how many orders fall into each category:
+
+'Small' (amount < 1,000)
+
+'Medium' (1,000–5,000)
+
+'Large' (> 5,000)
+*/
+
+/*
+Q4.
+From table employees(emp_id, dept_id, salary)
+Find average salary per department, but:
+
+Include only employees whose salary is above department average
+*/
+
+--🔹 LEVEL 3 — CASE WHEN + JOIN
+/*
+Q5.
+Tables:
+
+customers(customer_id, city)
+
+orders(order_id, customer_id, amount)
+
+Return customer_id, city, and a column customer_type:
+
+'Premium' if total order amount > 100,000
+
+'Regular' otherwise
+*/
+
+/*
+Q6.
+Tables:
+
+employees(emp_id, emp_name, manager_id)
+
+Return employee name and a column:
+
+'Manager' if the employee manages at least one employee
+
+'Individual Contributor' otherwise
+*/
+
+--🔹 LEVEL 4 — CASE WHEN + Window Functions (Interview Favorite)
+/*
+Q7.
+From table employees(emp_id, dept_id, salary)
+Return emp_id, dept_id, salary, and a column:
+
+'Top Earner' if employee is among top 3 salaries in their department
+
+'Others' otherwise
+*/
+
+/*
+Q8.
+From table sales(order_date, product_id, amount)
+Add a column:
+
+'Growth' if current month’s sales > previous month’s sales
+
+'Decline' otherwise
+*/
+
+--🔹 LEVEL 5 — Advanced CASE WHEN (Data Engineering Level)
+/*
+Q9.
+From table logs(user_id, log_date)
+Identify whether a user is:
+
+'Daily Active' → logged in every day for last 7 days
+
+'Weekly Active' → logged in at least once in last 7 days
+
+'Inactive' → otherwise
+*/
+
+/*
+Q10.
+From table transactions(user_id, txn_date, amount)
+Flag transactions as:
+
+'First Transaction'
+
+'Repeat Transaction'
+*/
