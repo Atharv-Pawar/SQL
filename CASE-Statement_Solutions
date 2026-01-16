@@ -11,10 +11,10 @@ Classify employees as:
 'Low' otherwise
 */
 SELECT emp_id, salary, CASE 
-	WHEN salary >= 80000 THEN 'High'
-	WHEN salary IN BETWEEN (40000 AND 79999) THEN 'Medium'
-	ELSE 'Low'
-	END	AS category
+  WHEN salary >= 80000 THEN 'High'
+  WHEN salary BETWEEN 40000 AND 79999 THEN 'Medium'
+  ELSE 'Low'
+END	AS category
 FROM employees;
 
 /*
@@ -32,8 +32,8 @@ Assign grades:
 */
 SELECT *, CASE
 	WHEN marks >= 90 THEN 'A'
-	WHEN marks IN BETWEEN (75 AND 89) THEN 'B'
-	WHEN marks IN BETWEEN (50 AND 74) THEN 'C'
+	WHEN marks BETWEEN (75 AND 89) THEN 'B'
+	WHEN marks BETWEEN (50 AND 74) THEN 'C'
 	ELSE 'FAIL'
 	END
 	AS Grades
@@ -49,15 +49,16 @@ Count how many orders fall into each category:
 
 'Medium' (1,000–5,000)
 
-'Large' (> 5,000)
+'Large' (> 5,000) 
 */
-SELECT COUNT(*) AS NumberOfOrders, amount, CASE
+SELECT COUNT(*) AS NumberOfOrders, SUM(amount) AS amount, CASE
 	WHEN amount < 1000 THEN 'Small'
-	WHEN amount IN BETWEEN (1000 AND 5000) THEN 'Medium'
+	WHEN amount BETWEEN (1000 AND 5000) THEN 'Medium'
 	ELSE 'Large'
 	END
 	AS category
-FROM orders;
+FROM orders
+GROUP BY order_id; 
 
 /*
 Q4.
@@ -66,10 +67,10 @@ Find average salary per department, but:
 
 Include only employees whose salary is above department average
 */
-SELECT emp_id, dept_id, CASE
-	WHEN salary > (SELECT AVG(salary) FROM employees e GROUP BY dept_id WHERE dept_id = e.dept_id)
-	END AS onlyHigherThanAverageSalary
-FROM employees;
+WITH e AS (
+  SELECT dept_id, AVG(salary) AS avg_salary FROM employees GROUP BY dept_id
+  ) SELECT emp_id, dept_id, salary FROM e
+  WHERE salary > (SELECT avg_salary FROM e); 
 
 --🔹 LEVEL 3 — CASE WHEN + JOIN
 /*
@@ -110,7 +111,7 @@ Return employee name and a column:
 'Individual Contributor' otherwise
 */
 SELECT e.emp_name, CASE
-	WHEN (SELECT COUNT(*) AS numberOfEmployees FROM employees GROUP BY manager_id) >= 1 THEN 'Manager'
+	WHEN (SELECT COUNT(*) AS numberOfEmployees FROM employees t WHERE e.emp_id = t.emp_id GROUP BY manager_id) >= 1 THEN 'Manager'
 	ELSE 'Individual Contributor'
 	END AS status
 FROM employees e JOIN employees m ON m.emp_id = e.manager_id;
@@ -143,15 +144,20 @@ Add a column:
 
 'Decline' otherwise
 */
-WITH monthlyGrowth AS (
-	SELECT EXTRACT(YEAR | MONTH FROM order_date), SUM(amount) AS total_sales, LAG(total_sales) OVER(PARTITION BY EXTRACT(YEAR | MONTH FROM order_date) ORDER BY order_date ASC) AS previous_month_sales
+WITH totalGrowth AS (
+	SELECT EXTRACT(MONTH FROM order_date) AS MonthOfOrder, SUM(amount) AS total_sales
 	FROM sales
-	GROUP BY EXTRACT(YEAR | MONTH FROM order_date)
-	) SELECT EXTRACT(YEAR | MONTH FROM s.order_date), s.product_id, t.amount, CASE
-		WHEN t.total_sales > t.previous_month_sales  THEN 'Growth'
-		ELSE 'Decline'
-		END AS status 
-	FROM sales s JOIN monthlyGrowth t ON s.order_date = t.order_date;
+	GROUP BY EXTRACT(MONTH FROM order_date)
+	) 
+WITH monthlyGrowth AS (
+	SELECT *, LAG(total_sales) OVER(ORDER BY order_date ASC) AS previous_month_sales
+	FROM totalGrowth
+	)
+SELECT t.MonthOfOrder, s.product_id, CASE
+	WHEN t.total_sales > t.previous_month_sales  THEN 'Growth'
+	ELSE 'Decline'
+	END AS status 
+FROM sales s JOIN monthlyGrowth t ON s.order_date = t.order_date;
 
 --🔹 LEVEL 5 — Advanced CASE WHEN (Data Engineering Level)
 /*
@@ -165,14 +171,7 @@ Identify whether a user is:
 
 'Inactive' → otherwise
 */
-WITH t AS (
-	SELECT user_id, log_date, ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY log_date) AS rn
-	FROM logs) SELECT user_id, CASE 
-		WHEN rn = 7 THEN 'Daily Active'
-		WHEN rn >= 1 AND rn < 7 THEN 'Weekly Active'
-		ELSE 'Inactive'
-		END AS TypeOfUsers
-	FROM t;
+-- DATEDIFF()
 
 
 /*
