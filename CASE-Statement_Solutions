@@ -51,14 +51,16 @@ Count how many orders fall into each category:
 
 'Large' (> 5,000) 
 */
-SELECT COUNT(*) AS NumberOfOrders, SUM(amount) AS amount, CASE
-	WHEN amount < 1000 THEN 'Small'
-	WHEN amount BETWEEN (1000 AND 5000) THEN 'Medium'
-	ELSE 'Large'
-	END
-	AS category
-FROM orders
-GROUP BY order_id; 
+WITH cte1 AS (
+	SELECT order_id, CASE
+		WHEN amount < 1000 THEN 'Small'
+		WHEN amount BETWEEN (1000 AND 5000) THEN 'Medium'
+		ELSE 'Large'
+		END
+		AS category
+	FROM orders
+	) SELECT c.category, COUNT(*) AS NumberOfOrders
+FROM cte1 GROUP BY c.category;
 
 /*
 Q4.
@@ -68,9 +70,11 @@ Find average salary per department, but:
 Include only employees whose salary is above department average
 */
 WITH e AS (
-  SELECT dept_id, AVG(salary) AS avg_salary FROM employees GROUP BY dept_id
-  ) SELECT emp_id, dept_id, salary FROM e
-  WHERE salary > (SELECT avg_salary FROM e); 
+  SELECT dept_id, AVG(salary) AS avg_salary 
+  FROM employees 
+  GROUP BY dept_id
+  ) SELECT emp_id, dept_id, salary FROM employees e1
+  WHERE salary > (SELECT avg_salary FROM e WHERE dept_id = e1.dept_id); 
 
 --🔹 LEVEL 3 — CASE WHEN + JOIN
 /*
@@ -111,10 +115,13 @@ Return employee name and a column:
 'Individual Contributor' otherwise
 */
 SELECT e.emp_name, CASE
-	WHEN (SELECT COUNT(*) AS numberOfEmployees FROM employees t WHERE e.emp_id = t.emp_id GROUP BY manager_id) >= 1 THEN 'Manager'
-	ELSE 'Individual Contributor'
-	END AS status
-FROM employees e JOIN employees m ON m.emp_id = e.manager_id;
+  WHEN COUNT(e.emp_id) >= 1 THEN 'Manager'
+  ELSE 'Individual Contributor'
+  END AS status
+FROM employees e
+LEFT JOIN employees m
+ON e.emp_id = m.manager_id
+GROUP BY e.emp_id, e.emp_name;
 
 --🔹 LEVEL 4 — CASE WHEN + Window Functions (Interview Favorite)
 /*
@@ -144,20 +151,7 @@ Add a column:
 
 'Decline' otherwise
 */
-WITH totalGrowth AS (
-	SELECT EXTRACT(MONTH FROM order_date) AS MonthOfOrder, SUM(amount) AS total_sales
-	FROM sales
-	GROUP BY EXTRACT(MONTH FROM order_date)
-	) 
-WITH monthlyGrowth AS (
-	SELECT *, LAG(total_sales) OVER(ORDER BY order_date ASC) AS previous_month_sales
-	FROM totalGrowth
-	)
-SELECT t.MonthOfOrder, s.product_id, CASE
-	WHEN t.total_sales > t.previous_month_sales  THEN 'Growth'
-	ELSE 'Decline'
-	END AS status 
-FROM sales s JOIN monthlyGrowth t ON s.order_date = t.order_date;
+-- current month’s sales > previous month’s sales
 
 --🔹 LEVEL 5 — Advanced CASE WHEN (Data Engineering Level)
 /*
