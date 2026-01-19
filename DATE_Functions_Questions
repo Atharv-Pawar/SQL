@@ -1,0 +1,67 @@
+--🔹 LEVEL 1 — Basic Date Difference
+-- Q1. Table: orders(order_id, order_date, delivery_date) Find the number of days taken to deliver each order.
+
+-- Q2. Table: employees(emp_id, joining_date). Find employees who joined within the last 30 days.
+
+-- Q3. Table: subscriptions(user_id, start_date, end_date) Find subscription duration (in days) for each user.
+
+--🔹 LEVEL 2 — Date Difference + Filtering
+-- Q4. Table: logins(user_id, login_date) Find users who did not log in for more than 7 days.
+
+-- Q5. Table: orders(order_id, order_date, payment_date) Find orders where payment was delayed by more than 3 days.
+
+-- Q6. Table: employees(emp_id, joining_date, exit_date) Find employees whose tenure was more than 2 years.
+
+--🔹 LEVEL 3 — Date Difference + GROUP BY
+-- Q7. Table: orders(order_id, customer_id, order_date) Find customers whose average gap between consecutive orders is more than 30 days.
+
+-- Q8. Table: logins(user_id, login_date) Find users who logged in on at least 10 distinct days in the last 30 days.
+
+-- 🔹 LEVEL 4 — Date Difference + Window Functions (Interview Favorite)
+-- Q9. Table: transactions(user_id, txn_date) Find the maximum gap (in days) between consecutive transactions for each user.
+
+-- Q10. Table: logins(user_id, log_date) Find users who logged in for at least 5 consecutive days.
+
+--🔥 Very common interview question
+--🔹 LEVEL 5 — Advanced / Data Engineering Scenarios
+-- Q11. Table: orders(order_id, order_date, ship_date, delivery_date) 
+/*
+Classify orders as:
+
+'Fast' → delivered within 3 days of shipping
+
+'Normal' → 4–7 days
+
+'Delayed' → more than 7 days
+*/
+
+-- Q12. Table: users(user_id, signup_date) Find users who never returned after signup (only one login within 30 days).
+
+-- Q13. Table: events(user_id, event_date) Detect inactive users: 
+/*
+Active → logged in within last 7 days
+
+Dormant → last login between 8–30 days ago
+
+Churned → no login for 30+ days
+*/
+
+/*
+🔹 BONUS — SQL Dialect Awareness
+
+Answer using your DB (MySQL / PostgreSQL / SQL Server):
+
+Q14.
+
+Difference between:
+
+DATEDIFF()
+
+AGE()
+
+TIMESTAMPDIFF()
+
+INTERVAL
+
+When would you use each?
+*/
