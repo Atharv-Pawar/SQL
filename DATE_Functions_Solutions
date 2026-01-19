@@ -1,0 +1,138 @@
+--🔹 LEVEL 1 — Basic Date Difference
+-- Q1. Table: orders(order_id, order_date, delivery_date) Find the number of days taken to deliver each order.
+SELECT order_id, DATEDIFF(delivery_date, order_date) AS days_taken_to_deliver FROM orders;
+
+-- Q2. Table: employees(emp_id, joining_date). Find employees who joined within the last 30 days.
+SELECT * FROM employees WHERE DATEDIFF(CURRENT_DATE, joining_date) <= 30;
+
+-- Q3. Table: subscriptions(user_id, start_date, end_date) Find subscription duration (in days) for each user.
+SELECT user_id, DATEDIFF(end_date, start_date) AS subscription_duration(in_days) FROM subscriptions;
+
+--🔹 LEVEL 2 — Date Difference + Filtering
+-- Q4. Table: logins(user_id, login_date) Find users who did not log in for more than 7 days.
+SELECT user_id
+FROM logins
+GROUP BY user_id
+HAVING DATEDIFF(CURRENT_DATE, MAX(login_date)) > 7;
+
+-- Q5. Table: orders(order_id, order_date, payment_date) Find orders where payment was delayed by more than 3 days.
+SELECT order_id FROM orders WHERE DATEDIFF(payment_date, order_date) > 3;
+
+-- Q6. Table: employees(emp_id, joining_date, exit_date) Find employees whose tenure was more than 2 years.
+SELECT emp_id FROM employees WHERE DATEDIFF(exit_date, joining_date) >= 730;
+
+-- OR --
+SELECT emp_id FROM employees WHERE exit_date >= joining_date + INTERVAL 2 YEAR;
+
+
+--🔹 LEVEL 3 — Date Difference + GROUP BY
+-- Q7. Table: orders(order_id, customer_id, order_date) Find customers whose average gap between consecutive orders is more than 30 days.
+WITH gap AS (
+	SELECT customer_id, order_date, LAG(order_date) OVER(PARTITION BY customer_id ORDER BY order_date) AS lg, DATEDIFF(order_date, lg) AS d
+	FROM orders 
+	ORDER BY customer_id, order_date
+	), WITH avg_gap AS (
+		SELECT customer_id, AVG(d) AS a 
+		FROM gap
+		GROUP BY customer_id
+		) SELECT customer_id, a AS avg_gap_bw_orders 
+		FROM avg_gap 
+		WHERE avg_gap_bw_orders > 30;
+
+-- Q8. Table: logins(user_id, login_date) Find users who logged in on at least 10 distinct days in the last 30 days.
+SELECT user_id, COUNT(DISTINCT login_date) AS d, DATEDIFF(CURRENT_DATE, DISTINCT login_date) AS d2
+FROM logins
+GROUP BY user_id
+HAVING d >= 10 AND d2 >= 30; 
+
+-- 🔹 LEVEL 4 — Date Difference + Window Functions (Interview Favorite)
+-- Q9. Table: transactions(user_id, txn_date) Find the maximum gap (in days) between consecutive transactions for each user.
+WITH g AS (
+	SELECT user_id, txn_date, LAG(txn_date) OVER(PARTITION BY user_id ORDER BY txn_date ASC) AS lg, DATEDIFF(txn_date, lg) AS gap
+	FROM transactions
+	ORDER BY user_id, txn_date
+	) SELECT user_id, MAX(gap) AS maximum_gap
+	FROM g 
+	GROUP BY user_id;
+
+-- Q10. Table: logins(user_id, log_date) Find users who logged in for at least 5 consecutive days.\
+SELECT user_id, log_date, LAG(log_date) OVER(PARTITION BY user_id ORDER BY log_date) AS lg, DATEDIFF(log_date, lg) AS d 
+FROM logins
+WHERE d >= 5;
+
+--🔥 Very common interview question
+--🔹 LEVEL 5 — Advanced / Data Engineering Scenarios
+-- Q11. Table: orders(order_id, order_date, ship_date, delivery_date) 
+/*
+Classify orders as:
+
+'Fast' → delivered within 3 days of shipping
+
+'Normal' → 4–7 days
+
+'Delayed' → more than 7 days
+*/
+WITH d AS (
+	SELECT order_id, order_date, ship_date, delivery_date, DATEDIFF(delivery_date, ship_date) AS dd
+	FROM orders
+	)
+SELECT order_id, CASE
+	WHEN dd <= 3 THEN 'Fast'
+	WHEN dd BETWEEN (4 AND 7) THEN 'Normal'
+	ELSE 'Delayed'
+	END AS delivery_category
+FROM d;
+
+-- Q12. Table: users(user_id, signup_date) Find users who never returned after signup (only one login within 30 days).
+WITH t AS (
+	SELECT user_id, signup_date, LAG(signup_date) OVER(PARTITION BY user_id ORDER BY signup_date) AS lg, DATEDIFF(signup_date, lg) AS dd
+	FROM users 
+	ORDER BY user_id, signup_date
+	)
+SELECT user_id, dd AS delay_from_signup 
+FROM t
+WHERE delay_from_signup >= 30;
+
+-- Q13. Table: events(user_id, event_date) Detect inactive users: 
+/*
+Active → logged in within last 7 days
+
+Dormant → last login between 8–30 days ago
+
+Churned → no login for 30+ days
+*/
+WITH t AS (
+	SELECT user_id, event_date, LAG(event_date) OVER(PARTITION BY user_id ORDER BY event_date) AS lg, DATEDIFF(event_date, lg) AS dd
+	FROM users 
+	ORDER BY user_id, event_date
+	)
+SELECT user_id, CASE
+	WHEN dd <= 7 THEN 'Active'
+	WHEN dd BETWEEN (8 AND 30) THEN 'Dormant'
+	ELSE 'Churned'
+	END AS user_category
+FROM t;
+
+/*
+🔹 BONUS — SQL Dialect Awareness
+
+Answer using your DB (MySQL / PostgreSQL / SQL Server):
+
+Q14.
+
+Difference between:
+
+DATEDIFF()
+
+AGE()
+
+TIMESTAMPDIFF()
+
+INTERVAL
+
+When would you use each?
+*/
+DATEDIFF(end_date, start_date) - return difference in days by substracting start_date from end_date
+AGE(date_of_birth) - return difference in years by substracting date_of_birth from CURRENT_DATE
+TIMESTAMPDIFF(end, start) - return the difference in 00:00:00 manner by substracting start TIMESTAMP from end TIMESTAMP
+INTERVAL - INTERVAL 10 DAY - means check it in the range of / interval of 10 days 
