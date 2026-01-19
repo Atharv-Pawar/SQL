@@ -28,37 +28,42 @@ SELECT emp_id FROM employees WHERE exit_date >= joining_date + INTERVAL 2 YEAR;
 --🔹 LEVEL 3 — Date Difference + GROUP BY
 -- Q7. Table: orders(order_id, customer_id, order_date) Find customers whose average gap between consecutive orders is more than 30 days.
 WITH gap AS (
-	SELECT customer_id, order_date, LAG(order_date) OVER(PARTITION BY customer_id ORDER BY order_date) AS lg, DATEDIFF(order_date, lg) AS d
+	SELECT customer_id, DATEDIFF(order_date, LAG(order_date) OVER(PARTITION BY customer_id ORDER BY order_date)) AS gap_in_days
 	FROM orders 
-	ORDER BY customer_id, order_date
-	), WITH avg_gap AS (
-		SELECT customer_id, AVG(d) AS a 
-		FROM gap
-		GROUP BY customer_id
-		) SELECT customer_id, a AS avg_gap_bw_orders 
-		FROM avg_gap 
-		WHERE avg_gap_bw_orders > 30;
+	) SELECT customer_id
+	FROM gap
+	GROUP BY customer_id
+	HAVING AVG(gap_in_days) >= 30;
 
 -- Q8. Table: logins(user_id, login_date) Find users who logged in on at least 10 distinct days in the last 30 days.
-SELECT user_id, COUNT(DISTINCT login_date) AS d, DATEDIFF(CURRENT_DATE, DISTINCT login_date) AS d2
+SELECT user_id
 FROM logins
+WHERE login_date >= CURRENT_DATE - INTERVAL 30 DAY
 GROUP BY user_id
-HAVING d >= 10 AND d2 >= 30; 
+HAVING COUNT(DISTINCT login_date) >= 10;
 
 -- 🔹 LEVEL 4 — Date Difference + Window Functions (Interview Favorite)
 -- Q9. Table: transactions(user_id, txn_date) Find the maximum gap (in days) between consecutive transactions for each user.
 WITH g AS (
 	SELECT user_id, txn_date, LAG(txn_date) OVER(PARTITION BY user_id ORDER BY txn_date ASC) AS lg, DATEDIFF(txn_date, lg) AS gap
 	FROM transactions
-	ORDER BY user_id, txn_date
 	) SELECT user_id, MAX(gap) AS maximum_gap
 	FROM g 
 	GROUP BY user_id;
 
 -- Q10. Table: logins(user_id, log_date) Find users who logged in for at least 5 consecutive days.\
-SELECT user_id, log_date, LAG(log_date) OVER(PARTITION BY user_id ORDER BY log_date) AS lg, DATEDIFF(log_date, lg) AS d 
-FROM logins
-WHERE d >= 5;
+WITH cte AS (
+  SELECT user_id,
+         log_date,
+         DATE_SUB(log_date,
+                  INTERVAL ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY log_date) DAY) AS grp
+  FROM logins
+)
+SELECT user_id
+FROM cte
+GROUP BY user_id, grp
+HAVING COUNT(*) >= 5;
+
 
 --🔥 Very common interview question
 --🔹 LEVEL 5 — Advanced / Data Engineering Scenarios
@@ -89,9 +94,11 @@ WITH t AS (
 	FROM users 
 	ORDER BY user_id, signup_date
 	)
-SELECT user_id, dd AS delay_from_signup 
+SELECT user_id
 FROM t
-WHERE delay_from_signup >= 30;
+WHERE delay_from_signup >= 30
+GROUP BY user_id
+HAVING COUNT(*) = 1;
 
 -- Q13. Table: events(user_id, event_date) Detect inactive users: 
 /*
@@ -101,17 +108,15 @@ Dormant → last login between 8–30 days ago
 
 Churned → no login for 30+ days
 */
-WITH t AS (
-	SELECT user_id, event_date, LAG(event_date) OVER(PARTITION BY user_id ORDER BY event_date) AS lg, DATEDIFF(event_date, lg) AS dd
-	FROM users 
-	ORDER BY user_id, event_date
-	)
-SELECT user_id, CASE
-	WHEN dd <= 7 THEN 'Active'
-	WHEN dd BETWEEN (8 AND 30) THEN 'Dormant'
-	ELSE 'Churned'
+SELECT user_id,
+	CASE
+	  WHEN DATEDIFF(CURRENT_DATE, MAX(event_date)) <= 7 THEN 'Active'
+	  WHEN DATEDIFF(CURRENT_DATE, MAX(event_date)) BETWEEN 8 AND 30 THEN 'Dormant'
+	  ELSE 'Churned'
 	END AS user_category
-FROM t;
+FROM events
+GROUP BY user_id;
+
 
 /*
 🔹 BONUS — SQL Dialect Awareness
@@ -132,7 +137,23 @@ INTERVAL
 
 When would you use each?
 */
-DATEDIFF(end_date, start_date) - return difference in days by substracting start_date from end_date
-AGE(date_of_birth) - return difference in years by substracting date_of_birth from CURRENT_DATE
-TIMESTAMPDIFF(end, start) - return the difference in 00:00:00 manner by substracting start TIMESTAMP from end TIMESTAMP
-INTERVAL - INTERVAL 10 DAY - means check it in the range of / interval of 10 days 
+DATEDIFF() 
+	Returns the difference in days between two dates.
+	MySQL / SQL Server
+	DATEDIFF(end_date, start_date)
+AGE()
+	Returns an INTERVAL, not just a number.
+   QUERY:
+	AGE(end_date, start_date)
+   OUTPUT:
+	2 years 3 mons 10 days
+
+TIMESTAMPDIFF() 
+	Returns difference between two timestamps in a unit you choose
+	TIMESTAMPDIFF(unit, start_ts, end_ts)
+	TIMESTAMPDIFF(HOUR, login_time, logout_time)
+
+INTERVAL 
+	Used for date arithmetic, not comparison by itself.
+	date + INTERVAL 10 DAY
+	date - INTERVAL 1 MONTH
