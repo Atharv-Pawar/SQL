@@ -43,44 +43,38 @@ WITH top_students_per_subjects AS (
 	WHERE d <= 2;
 
 -- Q6. ⚠️ Interview Trap From table: employees(emp_id, salary)
--- Find the second highest salary, handling duplicates correctly.❌
+-- Find the second highest salary, handling duplicates correctly.
 SELECT emp_id, salary
-FROM employees e1
-WHERE EXISTS (
+FROM (
 	SELECT emp_id, salary, DENSE_RANK() OVER(ORDER BY salary DESC) AS d 
 	FROM employees
-	WHERE d = 2 
-	AND 
-	emp_id = e1.emp_id
-	);
+	) t
+WHERE d = 2;
 
 --🔹 LEVEL 3 — Real Interview Problems
 -- Q7. From table: orders(order_id, customer_id, order_date)
--- Return the latest order per customer using window functions.❌
+-- Return the latest order per customer using window functions.
 SELECT customer_id, order_id 
-FROM orders o1
-WHERE EXISTS (
+FROM (
 	SELECT *, RANK() OVER(PARTITION BY customer_id ORDER BY order_date DESC) AS _rank_
 	FROM orders
-	WHERE _rank_ = 1
-	AND 
-	order_id = o1.order_id
-	);
+	) t
+WHERE _rank_ = 1;
 
 -- Q8. From table: employees(emp_id, dept_id, salary)
 -- Return employees who earn more than the department average 👉 You must use a window function.
 -- 👉 You must use a window function.
-SELECT *, 
-	ROW_NUMBER() OVER(PARTITION BY dept_id ORDER BY salary DESC) AS _row_number_,
-	RANK() OVER(PARTITION BY dept_id ORDER BY salary DESC) AS _rank_,
-	DENSE_RANK() OVER(PARTITION BY dept_id ORDER BY salary DESC) AS _dense_rank_
-FROM employees e1
-WHERE salary > (
-	SELECT AVG(salary) 
-	FROM employees
-	GROUP BY dept_id
-	WHERE dept_id = e1.dept_id
-	);
+-- 📌 Important rule (interview language):
+-- Window functions must be used in the condition that drives the result, not just displayed.
+SELECT emp_id, dept_id, salary
+FROM (
+    SELECT emp_id,
+           dept_id,
+           salary,
+           AVG(salary) OVER (PARTITION BY dept_id) AS dept_avg_salary
+    FROM employees
+) t
+WHERE salary > dept_avg_salary;
 
 -- Q9. From table: logins(user_id, login_date)
 -- Find the first login date and latest login date for each user using window functions.❌
@@ -119,16 +113,14 @@ FROM transactions;
 
 -- Q12. 🔥 Very Common Interview Question
 -- From table: employees(emp_id, dept_id, salary)
--- Find departments where at least 2 employees share the same salary.❌
+-- Find departments where at least 2 employees share the same salary.
 SELECT dept_id 
-FROM employees e1
-WHERE EXISTS (
+FROM (
 	SELECT dept_id, DENSE_RANK() OVER(PARTITION BY dept_id ORDER BY salary) AS rank_for_dept_wise_salary
 	FROM employees
-	WHERE dept_id = e1.dept_id
-	GROUP BY dept_id
-	HAVING COUNT(rank_for_dept_wise_salary) >= 2
-	);
+	) t 
+GROUP BY dept_id, salary
+HAVING COUNT(*) >= 2;
 
 --🔹 LEVEL 5 — Window Functions (Tricky / Thinking Required)
 -- Q13. From table: orders(order_id, customer_id, order_date)
