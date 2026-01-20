@@ -43,7 +43,7 @@ WITH top_students_per_subjects AS (
 	WHERE d <= 2;
 
 -- Q6. ⚠️ Interview Trap From table: employees(emp_id, salary)
--- Find the second highest salary, handling duplicates correctly.
+-- Find the second highest salary, handling duplicates correctly.❌
 SELECT emp_id, salary
 FROM employees e1
 WHERE EXISTS (
@@ -56,7 +56,7 @@ WHERE EXISTS (
 
 --🔹 LEVEL 3 — Real Interview Problems
 -- Q7. From table: orders(order_id, customer_id, order_date)
--- Return the latest order per customer using window functions.
+-- Return the latest order per customer using window functions.❌
 SELECT customer_id, order_id 
 FROM orders o1
 WHERE EXISTS (
@@ -69,15 +69,6 @@ WHERE EXISTS (
 
 -- Q8. From table: employees(emp_id, dept_id, salary)
 -- Return employees who earn more than the department average 👉 You must use a window function.
-SELECT emp_id, dept_id, salary 
-FROM employees e1
-WHERE salary > (
-	SELECT AVG(salary) 
-	FROM employees
-	GROUP BY dept_id
-	WHERE dept_id = e1.dept_id
-	);
-	
 -- 👉 You must use a window function.
 SELECT *, 
 	ROW_NUMBER() OVER(PARTITION BY dept_id ORDER BY salary DESC) AS _row_number_,
@@ -92,10 +83,10 @@ WHERE salary > (
 	);
 
 -- Q9. From table: logins(user_id, login_date)
--- Find the first login date and latest login date for each user using window functions.
+-- Find the first login date and latest login date for each user using window functions.❌
 WITH login_date_first AS (
 	SELECT *, 
-		ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY login_date ASC) AS starting_as_first,
+		ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY login_date ASC) AS starting_as_first
 	FROM logins
 	),
 WITH login_date_latest AS (
@@ -128,7 +119,7 @@ FROM transactions;
 
 -- Q12. 🔥 Very Common Interview Question
 -- From table: employees(emp_id, dept_id, salary)
--- Find departments where at least 2 employees share the same salary.
+-- Find departments where at least 2 employees share the same salary.❌
 SELECT dept_id 
 FROM employees e1
 WHERE EXISTS (
@@ -170,7 +161,10 @@ emp_id| dept_id| salary| salary_month| sal_mon_r | sal_r
 3	604		1920	MAY		2		2		
 3	604		1940	JUN		1  		1				
 
-*/
+*/❌
+--You ranked by salary_month DESC (wrong)
+--You compared two unrelated ranks
+--You did not compare previous month rank
 WITH rank_as_per_month AS (
 	SELECT *, DENSE_RANK() OVER(PARTITION BY dept_id, emp_id ORDER BY salary_month DESC) AS salary_month_wise_rank,
 	DENSE_RANK() OVER(PARTITION BY dept_id, emp_id ORDER BY salary DESC) AS salary_wise_rank
@@ -201,7 +195,10 @@ PARTITION BY student_id| exam_date ASC| marks | rank OVER(ORDER BY exam_date) | 
 3	03-01-2026	92	3	2
 3	04-01-2026	92	4	2
 
-*/
+*/❌
+--Ranking by exam order ≠ ranking improvement
+--Must compare rank vs previous rank
+--Needs LAG()
 WITH rank_as_per_exam_date_marks AS (
 	SELECT *, DENSE_RANK() OVER(PARTITION BY student_id ORDER BY exam_date ASC) AS rank_as_per_examdate,
 	DENSE_RANK() OVER(PARTITION BY student_id ORDER BY marks DESC) AS rank_as_per_marks
