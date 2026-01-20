@@ -1,0 +1,64 @@
+--🔹 LEVEL 1 — Window Function Basics
+--Q1. From table: employees(emp_id, dept_id, salary) Assign a unique row number to each employee ordered by salary (highest first).
+
+--Q2. From table: students(student_id, marks) 
+--Assign ranks to students based on marks (highest marks = rank 1).
+--Tied marks should get the same rank and skip ranks.
+
+-- Q3. From table: products(product_id, category, price)
+--Assign row numbers within each category, ordered by price (lowest first).
+
+--🔹 LEVEL 2 — ROW_NUMBER vs RANK vs DENSE_RANK
+/*
+Q4. From table: employees(emp_id, dept_id, salary)
+
+Rank employees by salary within each department using:
+
+ROW_NUMBER
+
+RANK
+
+DENSE_RANK
+👉 Return all three ranks side by side.
+*/
+
+-- Q5. From table: students(student_id, subject, marks)
+-- Return the top 2 students per subject, considering ties.
+
+-- Q6. ⚠️ Interview Trap From table: employees(emp_id, salary)
+-- Find the second highest salary, handling duplicates correctly.
+
+--🔹 LEVEL 3 — Real Interview Problems
+-- Q7. From table: orders(order_id, customer_id, order_date)
+-- Return the latest order per customer using window functions.
+
+-- Q8. From table: employees(emp_id, dept_id, salary)
+-- Return employees who earn more than the department average 👉 You must use a window function.
+
+-- Q9. From table: logins(user_id, login_date)
+-- Find the first login date and latest login date for each user using window functions.
+
+--🔹 LEVEL 4 — Advanced Window Logic (Data Engineer Level)
+-- Q10. From table: employees(emp_id, dept_id, salary)
+-- Find the top 3 salaries per department, but return all employees tied at the 3rd position.
+
+-- Q11. From table: transactions(user_id, txn_date, amount)
+-- Assign a sequential transaction number per user ordered by transaction date.
+
+-- Q12. 🔥 Very Common Interview Question
+-- From table: employees(emp_id, dept_id, salary)
+-- Find departments where at least 2 employees share the same salary.
+
+--🔹 LEVEL 5 — Window Functions (Tricky / Thinking Required)
+-- Q13. From table: orders(order_id, customer_id, order_date)
+-- Identify repeat customers:
+-- First order → label as New
+-- Subsequent orders → label as Repeat
+
+-- Q14. From table: employees(emp_id, dept_id, salary)
+-- Find employees whose salary rank improved compared to the previous month
+-- (Table also has salary_month).
+
+-- Q15. 💀 Interview Killer
+-- From table: scores(student_id, exam_date, marks)
+-- Find students whose rank improved in consecutive exams.
