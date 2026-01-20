@@ -77,24 +77,11 @@ FROM (
 WHERE salary > dept_avg_salary;
 
 -- Q9. From table: logins(user_id, login_date)
--- Find the first login date and latest login date for each user using window functions.❌
-WITH login_date_first AS (
-	SELECT *, 
-		ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY login_date ASC) AS starting_as_first
-	FROM logins
-	),
-WITH login_date_latest AS (
-	SELECT *, 
-		ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY login_date DESC) AS starting_as_latest
-	FROM logins
-	)
-SELECT l1.user_id, l1.login_date AS first_login_date, l2.login_date AS latest_login_date
-FROM login_date_first l1
-JOIN login_date_latest l2
-ON l1.user_id = l2.user_id
-WHERE l1.starting_as_first = 1
-AND 
-l2.starting_as_latest = 1;
+-- Find the first login date and latest login date for each user using window functions.
+SELECT DISTINCT user_id,
+       FIRST_VALUE(login_date) OVER (PARTITION BY user_id ORDER BY login_date) AS first_login_date,
+       FIRST_VALUE(login_date) OVER (PARTITION BY user_id ORDER BY login_date DESC) AS latest_login_date
+FROM logins;
 
 --🔹 LEVEL 4 — Advanced Window Logic (Data Engineer Level)
 -- Q10. From table: employees(emp_id, dept_id, salary)
@@ -114,13 +101,14 @@ FROM transactions;
 -- Q12. 🔥 Very Common Interview Question
 -- From table: employees(emp_id, dept_id, salary)
 -- Find departments where at least 2 employees share the same salary.
-SELECT dept_id 
+SELECT DISTINCT dept_id
 FROM (
-	SELECT dept_id, DENSE_RANK() OVER(PARTITION BY dept_id ORDER BY salary) AS rank_for_dept_wise_salary
+	SELECT dept_id,
+	       salary,
+	       COUNT(*) OVER (PARTITION BY dept_id, salary) AS cnt
 	FROM employees
-	) t 
-GROUP BY dept_id, salary
-HAVING COUNT(*) >= 2;
+) t
+WHERE cnt >= 2;
 
 --🔹 LEVEL 5 — Window Functions (Tricky / Thinking Required)
 -- Q13. From table: orders(order_id, customer_id, order_date)
