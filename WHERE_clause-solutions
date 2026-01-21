@@ -1,0 +1,240 @@
+-- Say why you chose 'IN' vs 'EXISTS'
+-- 🔹 LEVEL 1 — Basic WHERE & Comparison Operators
+-- Q1.
+-- From table employees(emp_id, salary)
+-- Return employees whose salary is greater than 50,000.
+SELECT *
+FROM employees
+WHERE salary > 50000;
+
+-- Q2.
+-- From table products(product_id, price)
+-- Return products whose price is less than or equal to 1,000.
+SELECT product_id
+FROM products
+WHERE price <= 1000;
+
+-- Q3.
+-- From table students(student_id, marks)
+-- Return students who did not score exactly 40 marks.
+SELECT *
+FROM students
+WHERE marks != 40;
+
+-- Q4.
+-- From table orders(order_id, amount)
+-- Return orders whose amount is exactly 999.
+SELECT order_id
+FROM orders
+WHERE amount = 999;
+
+-- 🔹 LEVEL 2 — AND / OR / BETWEEN / IN
+-- Q5.
+-- From table employees(emp_id, dept_id, salary)
+-- Return employees who:
+-- Belong to department 10 or 20
+-- AND salary is between 40,000 and 70,000
+SELECT emp_id
+FROM employees
+WHERE dept_id = 10 OR dept_id = 20
+AND salary BETWEEN (40000 AND 70000);
+
+-- Q6.
+-- From table orders(order_id, order_date)
+-- Return orders placed between 1st Jan 2025 and 31st Jan 2025.
+SELECT *
+FROM orders
+WHERE order_date BETWEEN (01-01-2025 AND 31-01-2025);
+
+-- Q7.
+-- From table customers(customer_id, city)
+-- Return customers whose city is Mumbai, Pune, or Bangalore.
+SELECT *
+FROM customers
+WHERE city IN ('Mumbai', 'Pune', 'Bangalore');
+
+-- Q8. ⚠️ Interview Trap
+-- From table employees(emp_id, salary)
+-- Return employees whose salary is NOT between 30,000 and 60,000.
+SELECT *
+FROM employees
+WHERE salary NOT BETWEEN (30000 AND 60000);
+
+-- 🔹 LEVEL 3 — LIKE / NOT LIKE / Pattern Matching
+-- Q9.
+-- From table users(user_id, email)
+-- Return users whose email ends with @gmail.com.
+SELECT *
+FROM employees
+WHERE email LIKE '%@gmail.com';
+
+-- Q10.
+-- From table employees(emp_name)
+-- Return employees whose name starts with ‘A’.
+SELECT *
+FROM employees
+WHERE UPPER(emp_name) LIKE 'A%';
+
+-- Q11.
+-- From table products(product_name)
+-- Return products whose name contains the word “Pro” anywhere.
+SELECT *
+FROM products
+WHERE product_name LIKE 'Pro%';
+
+-- Q12.
+-- From table customers(customer_name)
+-- Return customers whose name does NOT start with ‘S’.
+SELECT *
+FROM customers
+WHERE LOWER(customer_name) NOT LIKE 's%';
+
+-- 🔹 LEVEL 4 — IN / NOT IN vs EXISTS / NOT EXISTS
+-- Q13.
+-- Tables:
+-- customers(customer_id)
+-- orders(order_id, customer_id)
+-- Return customers who have placed at least one order.
+SELECT c.customer_id
+FROM customers c 
+WHERE EXISTS ( 
+	SELECT o.customer_id, COUNT(*) AS cnt
+	FROM orders o 
+	WHERE o.customer_id = c.customer_id
+	GROUP BY customer_id
+	HAVING COUNT(*) >= 1
+);
+
+-- Q14. ⚠️ NULL Trap
+-- Same tables as Q13.
+-- Return customers who have NOT placed any orders.
+SELECT c.customer_id
+FROM customers c 
+RIGHT JOIN orders o 
+ON c.customer_id = o.customer_id
+WHERE o.order_id IS NULL;
+
+-- Q15.
+-- Tables:
+-- employees(emp_id)
+-- projects(emp_id)
+-- Return employees who are assigned to any project.
+SELECT e1.emp_id
+FROM employees e1 
+WHERE EXISTS (
+	SELECT p.emp_id
+	FROM projects p 
+	WHERE p.emp_id = e1.emp_id
+);
+
+-- Q16. ⚠️ Interview Favorite
+-- Same tables as Q15.
+-- Return employees who are NOT assigned to any project.
+SELECT e1.emp_id
+FROM employees e1
+WHERE NOT EXISTS (
+	SELECT p.emp_id
+	FROM projects p 
+	WHERE p.emp_id = e1.emp_id
+);
+
+-- 🔹 LEVEL 5 — ANY / ALL (Rare but Powerful)
+-- Q17.
+-- From table employees(emp_id, salary)
+-- Return employees whose salary is greater than ANY salary in department 10.
+SELECT *
+FROM employees
+WHERE salary > ANY (
+	SELECT salary
+	FROM employees
+	WHERE dept_id = 10
+);
+
+-- Q18.
+-- From table employees(emp_id, salary)
+-- Return employees whose salary is greater than ALL salaries in department 10.
+SELECT *
+FROM employees
+WHERE salary > ALL (
+	SELECT salary
+	FROM employees
+	WHERE dept_id = 10
+);
+
+-- Q19.
+-- From table products(product_id, price)
+-- Return products whose price is less than ALL prices of category ‘Electronics’.
+SELECT *
+FROM products
+WHERE price < ALL (
+	SELECT price
+	FROM products
+	WHERE category = 'Electronics’
+);
+
+-- 🔹 LEVEL 6 — IS NULL / IS NOT NULL
+-- Q20.
+-- From table employees(emp_id, manager_id)
+-- Return employees who do not have a manager.
+SELECT emp_id
+FROM employees 
+WHERE manager_id IS NULL;
+
+-- Q21.
+-- From table orders(order_id, delivery_date)
+-- Return orders that have not been delivered yet.
+SELECT order_id
+FROM orders
+WHERE delivery_date IS NULL;
+
+-- Q22. ⚠️ Common Mistake
+-- From table customers(customer_id, phone)
+-- Return customers whose phone number is present.
+SELECT customer_id
+FROM customers
+WHERE phone IS NOT NULL;
+
+-- 🔥 LEVEL 7 — Mixed Logical Thinking (Real Interview Level)
+-- Q23.
+-- From table employees(emp_id, dept_id, salary, joining_date)
+-- Return employees who:
+-- Joined after 1st Jan 2024
+-- AND salary > 60,000
+-- AND department is NOT 30
+SELECT emp_id
+FROM employees
+WHERE joining_date > 01-01-2024 AND 
+salary > 60000 AND 
+dept_id != 30;
+
+-- Q24.
+-- Tables:
+-- orders(order_id, customer_id, amount)
+-- customers(customer_id, city)
+-- Return orders where:
+-- Amount > 5,000
+-- AND customer city is not Delhi
+-- AND customer exists in customer table
+SELECT o.order_id
+FROM orders o
+WHERE EXISTS (
+	SELECT c.customer_id
+	FROM customers c 
+	WHERE c.customer_id = o.customer_id AND 
+	c.city != 'Delhi'
+) AND 
+amount > 5000;
+
+-- Q25. 💀 Killer Question
+-- From table transactions(user_id, txn_date, amount)
+-- Return users who:
+-- Have at least one transaction > 10,000
+-- BUT no transaction < 1,000
+SELECT user_id
+FROM transactions 
+WHERE amount = ANY (
+	SELECT amount
+	FROM transactions
+	WHERE amount > 10000
+) AND 
+amount >= 1000;
