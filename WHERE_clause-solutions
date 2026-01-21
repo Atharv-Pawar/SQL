@@ -36,7 +36,7 @@ WHERE amount = 999;
 -- AND salary is between 40,000 and 70,000
 SELECT emp_id
 FROM employees
-WHERE dept_id = 10 OR dept_id = 20
+WHERE dept_id IN (10, 20)
 AND salary BETWEEN (40000 AND 70000);
 
 -- Q6.
@@ -44,7 +44,7 @@ AND salary BETWEEN (40000 AND 70000);
 -- Return orders placed between 1st Jan 2025 and 31st Jan 2025.
 SELECT *
 FROM orders
-WHERE order_date BETWEEN (01-01-2025 AND 31-01-2025);
+WHERE order_date BETWEEN '2025-01-01' AND '2025-01-31';
 
 -- Q7.
 -- From table customers(customer_id, city)
@@ -65,7 +65,7 @@ WHERE salary NOT BETWEEN (30000 AND 60000);
 -- From table users(user_id, email)
 -- Return users whose email ends with @gmail.com.
 SELECT *
-FROM employees
+FROM users
 WHERE email LIKE '%@gmail.com';
 
 -- Q10.
@@ -80,7 +80,7 @@ WHERE UPPER(emp_name) LIKE 'A%';
 -- Return products whose name contains the word “Pro” anywhere.
 SELECT *
 FROM products
-WHERE product_name LIKE 'Pro%';
+WHERE product_name LIKE '%Pro%';
 
 -- Q12.
 -- From table customers(customer_name)
@@ -97,22 +97,24 @@ WHERE LOWER(customer_name) NOT LIKE 's%';
 -- Return customers who have placed at least one order.
 SELECT c.customer_id
 FROM customers c 
-WHERE EXISTS ( 
-	SELECT o.customer_id, COUNT(*) AS cnt
-	FROM orders o 
-	WHERE o.customer_id = c.customer_id
-	GROUP BY customer_id
-	HAVING COUNT(*) >= 1
+WHERE EXISTS (
+  SELECT 1
+  FROM orders o
+  WHERE o.customer_id = c.customer_id
 );
+-- 📌 Reason: EXISTS stops at first match → faster.
 
 -- Q14. ⚠️ NULL Trap
 -- Same tables as Q13.
 -- Return customers who have NOT placed any orders.
 SELECT c.customer_id
-FROM customers c 
-RIGHT JOIN orders o 
-ON c.customer_id = o.customer_id
-WHERE o.order_id IS NULL;
+FROM customers c
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM orders o
+  WHERE o.customer_id = c.customer_id
+);
+
 
 -- Q15.
 -- Tables:
@@ -169,7 +171,7 @@ FROM products
 WHERE price < ALL (
 	SELECT price
 	FROM products
-	WHERE category = 'Electronics’
+	WHERE category = 'Electronics'
 );
 
 -- 🔹 LEVEL 6 — IS NULL / IS NOT NULL
@@ -203,7 +205,7 @@ WHERE phone IS NOT NULL;
 -- AND department is NOT 30
 SELECT emp_id
 FROM employees
-WHERE joining_date > 01-01-2024 AND 
+WHERE joining_date > '2024-01-01' AND 
 salary > 60000 AND 
 dept_id != 30;
 
@@ -231,10 +233,17 @@ amount > 5000;
 -- Have at least one transaction > 10,000
 -- BUT no transaction < 1,000
 SELECT user_id
-FROM transactions 
-WHERE amount = ANY (
-	SELECT amount
-	FROM transactions
-	WHERE amount > 10000
-) AND 
-amount >= 1000;
+FROM transactions t
+WHERE EXISTS (
+    SELECT 1
+    FROM transactions
+    WHERE user_id = t.user_id
+    AND amount > 10000
+)
+AND NOT EXISTS (
+    SELECT 1
+    FROM transactions
+    WHERE user_id = t.user_id
+    AND amount < 1000
+)
+GROUP BY user_id;
