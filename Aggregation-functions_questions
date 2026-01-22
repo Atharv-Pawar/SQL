@@ -1,0 +1,135 @@
+--🔹 LEVEL 1 — Aggregation Functions (Basics)
+-- Q1.
+-- From table employees(emp_id, salary)
+-- Find the total salary paid to all employees.
+
+-- Q2.
+-- From table employees(emp_id, salary)
+-- Find the minimum and maximum salary.
+
+-- Q3.
+-- From table employees(emp_id, salary)
+-- Find the average salary, rounded to 2 decimal places.
+
+-- Q4. ⚠️ Interview Trap
+-- From table employees(emp_id, salary)
+-- Count the number of employees who have a salary (NULL salaries may exist).
+
+-- Q5.
+-- From table orders(order_id, amount)
+-- Find the total order amount.
+
+-- 🔹 LEVEL 2 — GROUP BY + Aggregations
+-- Q6.
+-- From table employees(emp_id, dept_id, salary)
+-- Find the total salary per department.
+
+-- Q7.
+-- From table employees(emp_id, dept_id, salary)
+-- Find the average salary per department.
+
+-- Q8. ⚠️ Interview Favorite
+-- From table employees(emp_id, dept_id, salary)
+-- Find departments where average salary > 60,000.
+
+-- Q9.
+-- From table orders(order_id, customer_id, amount)
+-- Find the number of orders per customer.
+
+-- Q10. ⚠️ COUNT Trap
+-- From table orders(order_id, customer_id, delivery_date)
+-- Find the number of delivered orders per customer.
+
+-- 🔹 LEVEL 3 — Date Functions
+-- Q11.
+-- From table orders(order_id, order_date)
+-- Extract year and month from order_date.
+
+-- Q12.
+-- From table employees(emp_id, joining_date)
+-- Find employees who joined in the year 2024.
+
+-- Q13. ⚠️ Interview Trap
+-- From table orders(order_id, order_date)
+-- Find the number of orders placed in January 2025.
+
+-- Q14.
+-- From table employees(emp_id, joining_date)
+-- Find the experience in years for each employee.
+
+-- Q15.
+-- From table orders(order_id, order_date, delivery_date)
+-- Find the number of days taken to deliver each order.
+
+-- 🔹 LEVEL 4 — String Functions
+-- Q16.
+-- From table employees(emp_id, emp_name)
+-- Convert employee names to uppercase.
+
+-- Q17.
+-- From table employees(emp_id, emp_name)
+-- Find employees whose name length is greater than 10 characters.
+
+-- Q18. ⚠️ Interview Favorite
+-- From table users(user_id, email)
+-- Extract the domain name from the email.
+
+-- Q19.
+-- From table employees(emp_id, emp_name)
+-- Extract the first 3 characters of employee names.
+
+-- Q20.
+-- From table employees(emp_id, emp_name)
+-- Replace all occurrences of 'a' with '@' in employee names.
+
+-- 🔹 LEVEL 5 — COALESCE / NULL Handling
+-- Q21.
+-- From table employees(emp_id, bonus)
+-- Display bonus as 0 if it is NULL.
+
+-- Q22. ⚠️ Interview Trap
+-- From table orders(order_id, discount)
+-- Calculate total discount, treating NULL as zero.
+
+-- Q23.
+-- From table employees(emp_id, phone)
+-- Display phone number as 'Not Available' if NULL.
+
+-- Q24.
+-- From table employees(emp_id, salary, bonus)
+-- Calculate total compensation = salary + bonus
+-- (NULL bonus should not affect calculation)
+
+-- 🔥 LEVEL 6 — Mixed Functions (Real Interview Level)
+-- Q25.
+-- From table employees(emp_id, dept_id, salary, joining_date)
+-- Find:
+-- Department-wise average salary
+-- Only for employees who joined after 2020
+
+-- Q26. ⚠️ Killer Question
+-- From table orders(order_id, customer_id, amount, order_date)
+-- For each customer:
+
+-- Find total amount
+
+-- Find first order date
+
+-- Find last order date
+
+-- Q27.
+-- From table users(user_id, full_name)
+-- Split full name into first name and last name.
+
+-- Q28. ⚠️ Aggregation + String
+-- From table employees(emp_id, dept_id)
+-- Return department-wise comma-separated list of employee IDs.
+
+-- Q29.
+-- From table transactions(user_id, amount)
+-- Find users whose average transaction amount > 5,000.
+
+-- Q30. 💀 Final Boss
+-- From table employees(emp_id, salary, bonus)
+-- Find employees whose salary + bonus is:
+-- Greater than average total compensation of all employees
