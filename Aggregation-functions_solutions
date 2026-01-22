@@ -1,0 +1,218 @@
+--🔹 LEVEL 1 — Aggregation Functions (Basics)
+-- Q1.
+-- From table employees(emp_id, salary)
+-- Find the total salary paid to all employees.
+SELECT SUM(salary) AS total_salary
+FROM employees;
+
+-- Q2.
+-- From table employees(emp_id, salary)
+-- Find the minimum and maximum salary.
+SELECT MIN(salary) AS lowest_salary, MAX(salary) AS highest_salary
+FROM employees;
+
+-- Q3.
+-- From table employees(emp_id, salary)
+-- Find the average salary, rounded to 2 decimal places.
+SELECT ROUND(AVG(salary), 2) AS avg_salary
+FROM employees;
+
+-- Q4. ⚠️ Interview Trap
+-- From table employees(emp_id, salary)
+-- Count the number of employees who have a salary (NULL salaries may exist).
+SELECT COUNT(*) AS emp_with_salary
+FROM employees;
+
+-- Q5.
+-- From table orders(order_id, amount)
+-- Find the total order amount.
+SELECT SUM(amount) AS total_order_amount
+FROM orders;
+
+-- 🔹 LEVEL 2 — GROUP BY + Aggregations
+-- Q6.
+-- From table employees(emp_id, dept_id, salary)
+-- Find the total salary per department.
+SELECT dept_id, SUM(salary) AS total_salary
+FROM employees
+GROUP BY dept_id;
+
+-- Q7.
+-- From table employees(emp_id, dept_id, salary)
+-- Find the average salary per department.
+SELECT dept_id, AVG(salary) AS avg_salary
+FROM employees
+GROUP BY dept_id;
+
+-- Q8. ⚠️ Interview Favorite
+-- From table employees(emp_id, dept_id, salary)
+-- Find departments where average salary > 60,000.
+SELECT dept_id, AVG(salary) AS avg_salary
+FROM employees
+GROUP BY dept_id
+HAVING AVG(salary) > 60000;
+
+-- Q9.
+-- From table orders(order_id, customer_id, amount)
+-- Find the number of orders per customer.
+SELECT customer_id, COUNT(*) AS number_of_order
+FROM orders
+GROUP BY customer_id;
+
+-- Q10. ⚠️ COUNT Trap
+-- From table orders(order_id, customer_id, delivery_date)
+-- Find the number of delivered orders per customer.
+SELECT customer_id, COUNT(*) AS number_of_delivered_order
+FROM orders
+WHERE delivery_date > CURRENT_DATE
+GROUP BY customer_id;
+
+-- 🔹 LEVEL 3 — Date Functions
+-- Q11.
+-- From table orders(order_id, order_date)
+-- Extract year and month from order_date.
+SELECT *,
+	EXTRACT(YEAR FROM order_date) AS year_of_order,
+	EXTRACT(MONTH FROM order_date) AS month_of_order
+FROM orders;
+
+-- Q12.
+-- From table employees(emp_id, joining_date)
+-- Find employees who joined in the year 2024.
+SELECT *
+FROM employees
+WHERE EXTRACT(YEAR FROM joining_date) = '2024';
+
+-- Q13. ⚠️ Interview Trap
+-- From table orders(order_id, order_date)
+-- Find the number of orders placed in January 2025.
+SELECT COUNT(*) AS number_of_order
+FROM orders
+WHERE EXTRACT(YEAR FROM order_date) = '2025' AND EXTRACT(MONTH FROM order_date) = '01'
+GROUP BY EXTRACT(YEAR FROM order_date), EXTRACT(MONTH FROM order_date);
+
+-- Q14.
+-- From table employees(emp_id, joining_date)
+-- Find the experience in years for each employee.
+SELECT emp_id, DATEDIFF(year, joining_date, CURRENT_DATE) AS YOE
+FROM employees;
+-- DATEDIFF by default returns the difference in days
+
+-- Q15.
+-- From table orders(order_id, order_date, delivery_date)
+-- Find the number of days taken to deliver each order.
+SELECT order_id, DATEDIFF(order_date, delivery_date) AS days_taken_to_deliver_each_order
+FROM orders;
+
+-- 🔹 LEVEL 4 — String Functions
+-- Q16.
+-- From table employees(emp_id, emp_name)
+-- Convert employee names to uppercase.
+SELECT emp_id, UPPER(emp_name)
+FROM employees;
+
+-- Q17.
+-- From table employees(emp_id, emp_name)
+-- Find employees whose name length is greater than 10 characters.
+SELECT emp_name
+FROM employees
+WHERE LENGTH(emp_name) > 10;
+
+-- Q18. ⚠️ Interview Favorite
+-- From table users(user_id, email)
+-- Extract the domain name from the email.
+SELECT SUBSTR(email, '@', 2) AS domain_name
+FROM users;
+
+-- Q19.
+-- From table employees(emp_id, emp_name)
+-- Extract the first 3 characters of employee names.
+SELECT SUBSTR(emp_name, 3) AS first_3_char_emp_name
+FROM employees;
+
+-- Q20.
+-- From table employees(emp_id, emp_name)
+-- Replace all occurrences of 'a' with '@' in employee names.
+SELECT REPLACE(emp_name, 'a', '@')
+FROM employees;
+
+-- 🔹 LEVEL 5 — COALESCE / NULL Handling
+-- Q21.
+-- From table employees(emp_id, bonus)
+-- Display bonus as 0 if it is NULL.
+SELECT emp_id, COALESCE(bonus, 0) AS new_bonus
+FROM employees;
+
+-- Q22. ⚠️ Interview Trap
+-- From table orders(order_id, discount)
+-- Calculate total discount, treating NULL as zero.
+SELECT SUM(COALESCE(discount, 0)) AS total_discount
+FROM orders;
+
+-- Q23.
+-- From table employees(emp_id, phone)
+-- Display phone number as 'Not Available' if NULL.
+SELECT emp_id, COALESCE(phone, 'Not Available') AS phone_number
+FROM employees;
+
+-- Q24.
+-- From table employees(emp_id, salary, bonus)
+-- Calculate total compensation = salary + bonus
+-- (NULL bonus should not affect calculation)
+SELECT emp_id, salary+COALESCE(bonus, 0) AS total_compensation
+FROM employees;
+
+-- 🔥 LEVEL 6 — Mixed Functions (Real Interview Level)
+-- Q25.
+-- From table employees(emp_id, dept_id, salary, joining_date)
+-- Find:
+-- Department-wise average salary
+-- Only for employees who joined after 2020
+SELECT dept_id, AVG(salary) AS avg_salary
+FROM employees
+WHERE YEAR(joining_date) = '2020'
+GROUP BY dept_id;
+
+-- Q26. ⚠️ Killer Question
+-- From table orders(order_id, customer_id, amount, order_date)
+-- For each customer:
+-- Find total amount
+-- Find first order date
+-- Find last order date
+SELECT customer_id, SUM(amount) AS total_amount,
+	FIRST_VALUE(order_date) OVER(PARTITION BY customer_id ORDER BY order_date) AS first_order_date,
+	FIRST_VALUE(order_date) OVER(PARTITION BY customer_id ORDER BY order_date DESC) AS last_order_date
+FROM orders
+GROUP BY customer_id;
+
+-- Q27.
+-- From table users(user_id, full_name)
+-- Split full name into first name and last name.
+SELECT SPLIT(full_name, ' ') AS f_name, l_name
+FROM users;
+
+-- Q28. ⚠️ Aggregation + String
+-- From table employees(emp_id, dept_id)
+-- Return department-wise comma-separated list of employee IDs.
+SELECT dept_id, GROUP_CONCAT(emp_id) AS dept_wise_empIDs
+FROM employees
+GROUP BY dept_id;
+
+-- Q29.
+-- From table transactions(user_id, amount)
+-- Find users whose average transaction amount > 5,000.
+SELECT user_id, AVG(amount) AS avg_amount
+FROM transactions
+GROUP BY user_id 
+HAVING AVG(amount) > 5000;
+
+-- Q30. 💀 Final Boss
+-- From table employees(emp_id, salary, bonus)
+-- Find employees whose salary + bonus is:
+-- Greater than average total compensation of all employees
+SELECT emp_id, salary+COALESCE(bonus, 0) AS total_compensation
+FROM employees
+WHERE total_compensation > ( 
+	SELECT AVG(salary+COALESCE(bonus, 0))
+	FROM employees
+);
