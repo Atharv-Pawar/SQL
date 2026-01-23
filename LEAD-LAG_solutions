@@ -14,7 +14,7 @@ FROM employees;
 -- order_date
 -- previous_order_date
 SELECT *,
-	LAG(order_date) OVER(ORDER BY order_id, order_date) AS previous_order_date
+	LAG(order_date) OVER(ORDER BY order_date) AS previous_order_date
 FROM orders;
 
 -- Q3.
@@ -32,7 +32,7 @@ FROM students;
 -- show salary
 -- show previous salary within the same department
 SELECT salary, 
-	LAG(salary) OVER(PARTITION BY dept_id) as previous_salary
+	LAG(salary) OVER(PARTITION BY dept_id ORDER BY salary) as previous_salary
 FROM employees;
 
 -- Q5.
@@ -41,7 +41,7 @@ FROM employees;
 -- show current order date
 -- show previous order date
 SELECT order_date AS current_order_date,
-	LAG(order_date) OVER(PARTITION BY customer_id) AS previous_order_date
+	LAG(order_date) OVER(PARTITION BY customer_id ORDER BY order_date) AS previous_order_date
 FROM orders;
 
 -- Q6.
@@ -50,7 +50,7 @@ FROM orders;
 -- show transaction amount
 -- show next transaction amount for the same user
 SELECT amount AS transaction_amount,
-	LEAD(amount) OVER(PARTITION BY user_id, txn_date) AS next_transaction_amount
+	LEAD(amount) OVER(PARTITION BY user_id ORDER BY txn_date) AS next_transaction_amount
 FROM transactions;
 
 -- 🔹 LEVEL 3 — Difference / Change Detection
@@ -58,22 +58,20 @@ FROM transactions;
 -- Table: employees(emp_id, salary_month, salary)
 -- Find salary change amount compared to the previous month for each employee.
 SELECT *,
-	LAG(salary) OVER(ORDER BY salary_month) AS previous_month_salary,
-	(previous_month_salary - salary) AS diff_salary
+	(salary - LAG(salary) OVER(PARTITION BY emp_id ORDER BY salary_month)) AS salary_change
 FROM employees
-ORDER BY salary_month;
+ORDER BY emp_id, salary_month;
 
 -- Q8.
 -- Same table as Q7.
 -- Find employees whose salary increased compared to the previous month.
-SELECT emp_id,
+SELECT emp_id
 FROM (
 	SELECT *,
-		LAG(salary) OVER(ORDER BY salary_month) AS previous_month_salary 
-	FROM employees
-	WHERE LAG(salary) OVER(ORDER BY salary_month) < salary 
+		LAG(salary) OVER(PARTITION BY emp_id ORDER BY salary_month) AS previous_month_salary 
+	FROM employees 
 ) t
-ORDER BY salary_month;
+WHERE salary > previous_month_salary;
 
 -- Q9.
 -- Table: sales(product_id, sale_date, amount)
@@ -91,7 +89,7 @@ FROM sales;
 -- calculate number of days since last login
 SELECT login_date, 
 	LAG(login_date) OVER(PARTITION BY user_id ORDER BY login_date) AS previous_login_date,
-	DATEDIFF(previous_login_date, login_date) AS number_of_days 
+	DATEDIFF(login_date, LAG(login_date) OVER(PARTITION BY user_id ORDER BY login_date)) AS number_of_days 
 FROM logins;
 
 -- Q11. ⚠️ Very Common Interview Question
@@ -100,19 +98,22 @@ FROM logins;
 SELECT customer_id
 FROM (
 	SELECT customer_id, order_date,
-		LAG(order_date) OVER(PARTITION BY customer_id ORDER BY order_date) AS previous_order_date,
+		LAG(order_date) OVER(PARTITION BY customer_id ORDER BY order_date) AS previous_order_date
 	FROM orders
-	WHERE DATEDIFF(order_date, LAG(order_date) OVER(PARTITION BY customer_id ORDER BY order_date)) = 1
-) t;
+) t
+WHERE DATEDIFF(order_date, previous_order_date) = 1;
 
 -- Q12.
 -- Table: temperature(city, record_date, temp)
 -- Detect temperature spikes:
 -- temperature today is higher than yesterday
-SELECT city, record_date, temp,
-	LAG(temp) OVER(PARTITION BY city ORDER BY record_date) AS yesterday_temp
-FROM temperature
-WHERE temp > LAG(temp) OVER(PARTITION BY city ORDER BY record_date);
+SELECT *
+FROM (
+	SELECT city, record_date, temp,
+		LAG(temp) OVER(PARTITION BY city ORDER BY record_date) AS yesterday_temp
+	FROM temperature
+) t
+WHERE temp > yesterday_temp;
 
 -- 🔹 LEVEL 5 — LEAD + Business Logic
 -- Q13.
@@ -120,7 +121,7 @@ WHERE temp > LAG(temp) OVER(PARTITION BY city ORDER BY record_date);
 -- Calculate:
 -- days between joining of one employee and joining of the next employee
 SELECT 
-	DATEDIFF(joining_date, LEAD(joining_date)OVER(ORDER BY joining_date)) AS days_between_joining_of_employees
+	DATEDIFF(LEAD(joining_date)OVER(ORDER BY joining_date), joining_date) AS days_between_joining_of_employees
 FROM employees
 ORDER BY joining_date;
 -- not used PARTITION b'coz an employees can't have two different joining_date
@@ -134,20 +135,16 @@ user_id event_time event_type
 1	10:24:00	log-out
 1	10:24:01	log-in
 */
-WITH cte1 AS (
-	SELECT u1.user_id,
-		u1.event_time,
-		LEAD(u2.event_time)OVER(PARTITION BY u2.user_id ORDER BY u2.event_time) AS next_event_time
-		u1.event_type,
-		TIMESTAMPDIFF('MINUTE', next_event_time, u1.event_time) AS ts
-	FROM events u1
-	JOIN events u2 
-	ON u2.event_time = u1.event_time
-	WHERE u1.event_type = "log-out" AND u2.event_type = "log-in"
-) 
 SELECT user_id
-FROM cte1
-WHERE ts = 0;
+FROM (
+  SELECT user_id,
+         event_type,
+         LEAD(event_type) OVER(PARTITION BY user_id ORDER BY event_time) AS next_event
+  FROM events
+) t
+WHERE event_type = 'log-in'
+AND next_event = 'log-out';
+
 
 -- Q15. 💀 Killer Question
 -- Table: scores(student_id, exam_date, marks)
@@ -155,7 +152,7 @@ WHERE ts = 0;
 SELECT student_id
 FROM (
 	SELECT *,
-		LAG(marks) OVER(PARTITION BY student_id ORDER BY exame_date) AS previous_exam_marks
+		LAG(marks) OVER(PARTITION BY student_id ORDER BY exam_date) AS previous_exam_marks
 	FROM scores
-	WHERE marks > LAG(marks) OVER(PARTITION BY student_id ORDER BY exame_date)
-) t;
+) t 
+WHERE marks > previous_exam_marks;
