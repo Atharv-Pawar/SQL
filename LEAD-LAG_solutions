@@ -1,0 +1,161 @@
+-- 🔹 LEVEL 1 — LAG / LEAD Basics
+-- Q1.
+-- Table: employees(emp_id, salary)
+-- Return each employee’s salary along with the previous employee’s salary
+-- (ordered by salary ascending).
+SELECT *,
+	LAG(salary) OVER(ORDER BY salary) AS previous_salary
+FROM employees;
+
+-- Q2.
+-- Table: orders(order_id, order_date)
+-- For each order, return:
+-- order_id
+-- order_date
+-- previous_order_date
+SELECT *,
+	LAG(order_date) OVER(ORDER BY order_id, order_date) AS previous_order_date
+FROM orders;
+
+-- Q3.
+-- Table: students(student_id, marks)
+-- Show each student’s marks and the next student’s marks
+-- (ordered by marks DESC).
+SELECT *,
+	LEAD(marks) OVER(ORDER BY marks DESC) AS next_student_marks
+FROM students;
+
+-- 🔹 LEVEL 2 — LAG / LEAD with PARTITION BY
+-- Q4.
+-- Table: employees(emp_id, dept_id, salary)
+-- For each employee:
+-- show salary
+-- show previous salary within the same department
+SELECT salary, 
+	LAG(salary) OVER(PARTITION BY dept_id) as previous_salary
+FROM employees;
+
+-- Q5.
+-- Table: orders(order_id, customer_id, order_date)
+-- For each customer:
+-- show current order date
+-- show previous order date
+SELECT order_date AS current_order_date,
+	LAG(order_date) OVER(PARTITION BY customer_id) AS previous_order_date
+FROM orders;
+
+-- Q6.
+-- Table: transactions(user_id, txn_date, amount)
+-- For each transaction:
+-- show transaction amount
+-- show next transaction amount for the same user
+SELECT amount AS transaction_amount,
+	LEAD(amount) OVER(PARTITION BY user_id, txn_date) AS next_transaction_amount
+FROM transactions;
+
+-- 🔹 LEVEL 3 — Difference / Change Detection
+-- Q7. ⚠️ Interview Favorite
+-- Table: employees(emp_id, salary_month, salary)
+-- Find salary change amount compared to the previous month for each employee.
+SELECT *,
+	LAG(salary) OVER(ORDER BY salary_month) AS previous_month_salary,
+	(previous_month_salary - salary) AS diff_salary
+FROM employees
+ORDER BY salary_month;
+
+-- Q8.
+-- Same table as Q7.
+-- Find employees whose salary increased compared to the previous month.
+SELECT emp_id,
+FROM (
+	SELECT *,
+		LAG(salary) OVER(ORDER BY salary_month) AS previous_month_salary 
+	FROM employees
+	WHERE LAG(salary) OVER(ORDER BY salary_month) < salary 
+) t
+ORDER BY salary_month;
+
+-- Q9.
+-- Table: sales(product_id, sale_date, amount)
+-- Find day-over-day sales difference for each product.
+SELECT product_id, 
+	(amount - LAG(amount) OVER(PARTITION BY product_id ORDER BY sale_date)) AS dayoverday_sales_difference_for_each_product
+FROM sales;
+
+-- 🔹 LEVEL 4 — Trend & Gap Analysis (Data Engineer Level)
+-- Q10.
+-- Table: logins(user_id, login_date)
+-- For each user:
+-- show login date
+-- show previous login date
+-- calculate number of days since last login
+SELECT login_date, 
+	LAG(login_date) OVER(PARTITION BY user_id ORDER BY login_date) AS previous_login_date,
+	DATEDIFF(previous_login_date, login_date) AS number_of_days 
+FROM logins;
+
+-- Q11. ⚠️ Very Common Interview Question
+-- Table: orders(order_id, customer_id, order_date)
+-- Identify customers who placed orders on consecutive days.
+SELECT customer_id
+FROM (
+	SELECT customer_id, order_date,
+		LAG(order_date) OVER(PARTITION BY customer_id ORDER BY order_date) AS previous_order_date,
+	FROM orders
+	WHERE DATEDIFF(order_date, LAG(order_date) OVER(PARTITION BY customer_id ORDER BY order_date)) = 1
+) t;
+
+-- Q12.
+-- Table: temperature(city, record_date, temp)
+-- Detect temperature spikes:
+-- temperature today is higher than yesterday
+SELECT city, record_date, temp,
+	LAG(temp) OVER(PARTITION BY city ORDER BY record_date) AS yesterday_temp
+FROM temperature
+WHERE temp > LAG(temp) OVER(PARTITION BY city ORDER BY record_date);
+
+-- 🔹 LEVEL 5 — LEAD + Business Logic
+-- Q13.
+-- Table: employees(emp_id, joining_date, resignation_date)
+-- Calculate:
+-- days between joining of one employee and joining of the next employee
+SELECT 
+	DATEDIFF(joining_date, LEAD(joining_date)OVER(ORDER BY joining_date)) AS days_between_joining_of_employees
+FROM employees
+ORDER BY joining_date;
+-- not used PARTITION b'coz an employees can't have two different joining_date
+
+-- Q14.
+-- Table: events(user_id, event_time, event_type)
+-- Find cases where:
+-- login is immediately followed by logout
+/*
+user_id event_time event_type
+1	10:24:00	log-out
+1	10:24:01	log-in
+*/
+WITH cte1 AS (
+	SELECT u1.user_id,
+		u1.event_time,
+		LEAD(u2.event_time)OVER(PARTITION BY u2.user_id ORDER BY u2.event_time) AS next_event_time
+		u1.event_type,
+		TIMESTAMPDIFF('MINUTE', next_event_time, u1.event_time) AS ts
+	FROM events u1
+	JOIN events u2 
+	ON u2.event_time = u1.event_time
+	WHERE u1.event_type = "log-out" AND u2.event_type = "log-in"
+) 
+SELECT user_id
+FROM cte1
+WHERE ts = 0;
+
+-- Q15. 💀 Killer Question
+-- Table: scores(student_id, exam_date, marks)
+-- Find students whose marks improved in consecutive exams.
+SELECT student_id
+FROM (
+	SELECT *,
+		LAG(marks) OVER(PARTITION BY student_id ORDER BY exame_date) AS previous_exam_marks
+	FROM scores
+	WHERE marks > LAG(marks) OVER(PARTITION BY student_id ORDER BY exame_date)
+) t;
