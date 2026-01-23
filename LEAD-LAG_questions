@@ -1,0 +1,81 @@
+-- 🔹 LEVEL 1 — LAG / LEAD Basics
+-- Q1.
+-- Table: employees(emp_id, salary)
+-- Return each employee’s salary along with the previous employee’s salary
+-- (ordered by salary ascending).
+
+-- Q2.
+-- Table: orders(order_id, order_date)
+-- For each order, return:
+-- order_id
+-- order_date
+-- previous_order_date
+
+-- Q3.
+-- Table: students(student_id, marks)
+-- Show each student’s marks and the next student’s marks
+-- (ordered by marks DESC).
+
+-- 🔹 LEVEL 2 — LAG / LEAD with PARTITION BY
+-- Q4.
+-- Table: employees(emp_id, dept_id, salary)
+-- For each employee:
+-- show salary
+-- show previous salary within the same department
+
+-- Q5.
+-- Table: orders(order_id, customer_id, order_date)
+-- For each customer:
+-- show current order date
+-- show previous order date
+
+-- Q6.
+-- Table: transactions(user_id, txn_date, amount)
+-- For each transaction:
+-- show transaction amount
+-- show next transaction amount for the same user
+
+-- 🔹 LEVEL 3 — Difference / Change Detection
+-- Q7. ⚠️ Interview Favorite
+-- Table: employees(emp_id, salary_month, salary)
+-- Find salary change amount compared to the previous month for each employee.
+
+-- Q8.
+-- Same table as Q7.
+-- Find employees whose salary increased compared to the previous month.
+
+-- Q9.
+-- Table: sales(product_id, sale_date, amount)
+-- Find day-over-day sales difference for each product.
+
+-- 🔹 LEVEL 4 — Trend & Gap Analysis (Data Engineer Level)
+-- Q10.
+-- Table: logins(user_id, login_date)
+-- For each user:
+-- show login date
+-- show previous login date
+-- calculate number of days since last login
+
+-- Q11. ⚠️ Very Common Interview Question
+-- Table: orders(order_id, customer_id, order_date)
+-- Identify customers who placed orders on consecutive days.
+
+-- Q12.
+-- Table: temperature(city, record_date, temp)
+-- Detect temperature spikes:
+-- temperature today is higher than yesterday
+
+-- 🔹 LEVEL 5 — LEAD + Business Logic
+-- Q13.
+-- Table: employees(emp_id, joining_date, resignation_date)
+-- Calculate:
+-- days between joining of one employee and joining of the next employee
+
+-- Q14.
+-- Table: events(user_id, event_time, event_type)
+-- Find cases where:
+-- login is immediately followed by logout
+
+-- Q15. 💀 Killer Question
+-- Table: scores(student_id, exam_date, marks)
+-- Find students whose marks improved in consecutive exams.
