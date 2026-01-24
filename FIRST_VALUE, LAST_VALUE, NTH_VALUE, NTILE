@@ -1,0 +1,107 @@
+--🔹 LEVEL 1 — FIRST_VALUE / LAST_VALUE Basics
+-- Q1.
+-- Table: employees(emp_id, dept_id, salary)
+-- Return each employee’s salary along with the highest salary in their department.
+-- 👉 Must use FIRST_VALUE
+
+-- Q2. ⚠️ Interview Trap
+-- Same table.
+-- Return each employee’s salary along with the lowest salary in their department.
+-- 👉 Must use LAST_VALUE
+-- 👉 Frame clause matters
+
+-- Q3.
+-- Table: orders(order_id, customer_id, order_date, amount)
+-- For each customer, show:
+-- order_id
+-- order_date
+-- first order amount of that customer
+
+-- 🔹 LEVEL 2 — Frame Awareness (VERY IMPORTANT)
+-- Q4. ⚠️ Common Mistake Question
+-- Table: employees(emp_id, dept_id, salary)
+-- Return:
+-- emp_id
+-- salary
+-- department max salary using LAST_VALUE
+-- 👉 Correct result required
+-- 👉 Wrong framing will fail
+
+-- Q5.
+-- Same table.
+-- Show each employee’s salary and department min salary using FIRST_VALUE.
+
+-- 🔹 LEVEL 3 — NTH_VALUE
+-- Q6.
+-- Table: employees(emp_id, dept_id, salary)
+-- Find the 2nd highest salary in each department using NTH_VALUE.
+-- 👉 No subqueries
+-- 👉 Must use window function
+
+-- Q7. ⚠️ Edge Case
+-- Same table.
+-- Return:
+-- dept_id
+-- 3rd highest salary
+-- If a department has fewer than 3 employees, return NULL
+-- 👉 Use NTH_VALUE
+
+-- Q8.
+-- Table: students(student_id, subject, marks)
+-- For each subject, return:
+-- student_id
+-- marks
+-- 3rd topper’s marks
+
+-- 🔹 LEVEL 4 — NTILE (Bucketing / Segmentation)
+-- Q9.
+-- Table: employees(emp_id, salary)
+-- Divide employees into 4 salary bands (quartiles).
+-- Return:
+-- emp_id
+-- salary
+-- salary_quartile
+
+-- 👉 Use NTILE(4)
+-- Q10.
+-- Same table.
+-- Identify top 25% salaried employees using NTILE.
+-- Q11.
+-- Table: sales(order_id, sale_date, amount)
+-- Group sales into 5 equal buckets based on amount and show:
+-- order_id
+-- amount
+-- bucket_number
+
+-- 🔹 LEVEL 5 — Real Interview Scenarios
+-- Q12. ⚠️ Killer Question
+-- Table: employees(emp_id, dept_id, salary)
+-- For each employee, show:
+-- salary
+-- difference between salary and department highest salary
+-- 👉 Must use FIRST_VALUE
+-- 👉 No subqueries
+
+-- Q13.
+-- Table: orders(order_id, customer_id, order_date, amount)
+-- For each order, show:
+-- order_id
+-- amount
+-- customer’s first order amount
+-- difference from first order
+
+-- Q14. ⚠️ Trick Question
+-- Table: employees(emp_id, dept_id, salary)
+-- Why does the following query give wrong results?
+-- SELECT emp_id, salary,
+--        LAST_VALUE(salary) OVER (PARTITION BY dept_id ORDER BY salary) AS dept_min_salary
+-- FROM employees;
+-- 👉 Explain the issue
+-- 👉 Provide corrected query
+
+-- Q15. 💀 Ultimate
+-- Table: employees(emp_id, dept_id, salary)
+-- Return top 2 salaries per department using:
+-- FIRST_VALUE
+-- NTH_VALUE
+-- NO RANK / DENSE_RANK / ROW_NUMBER
