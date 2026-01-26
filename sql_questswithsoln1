@@ -1,0 +1,294 @@
+/*
+🔹 PART 1 — UNION / UNION ALL (High-Yield Practice)
+Q1. Basic UNION
+Tables:
+online_orders(order_id, customer_id)
+offline_orders(order_id, customer_id)
+
+Return unique customer_ids who placed orders from either source.
+*/
+SELECT DISTINCT(customer_id) 
+FROM (
+	SELECT * FROM online_orders
+	UNION
+	SELECT * FROM offline_orders
+);
+
+/*
+Q2. UNION ALL vs UNION
+
+Same tables as Q1.
+Return total number of orders placed, counting duplicates if the same order exists in both tables.
+👉 Decide: UNION or UNION ALL?
+*/
+SELECT customer_id, COUNT(*) AS totalNumberOfOrders
+FROM (
+	SELECT * FROM online_orders
+	UNION ALL
+	SELECT * FROM offline_orders
+) t
+GROUP BY customer_id; 
+-- UNION ALL - all values from combinationation with duplicates | UNION - all values from combinations withut duplicates
+
+/*
+Q3. Column Mismatch Trap ⚠️
+
+Tables:
+employees(emp_id, emp_name)
+contractors(contractor_id, contractor_name, end_date)
+
+Return a combined list:
+id | name | type
+
+Where type = 'EMPLOYEE' or 'CONTRACTOR'.
+*/
+SELECT emp_id, emp_name, SET type = 'EMPLOYEE'
+FROM employees
+UNION 
+SELECT contractor_id, contractor_name, SET type = 'CONTRACTOR'
+FROM contractors;
+
+/*
+Q4. Date Filter + UNION
+
+Tables:
+sales_2024(order_id, amount, sale_date)
+sales_2025(order_id, amount, sale_date)
+
+Return all orders after 1st Jan 2025, without duplicates.
+*/
+SELECT DISTINCT order_id 
+FROM (
+	SELECT * FROM sales_2024
+	UNION 
+	SELECT * FROM sales__2025
+) t 
+WHERE sale_date > '2025-01-01';
+
+/*
+Q5. UNION with ORDER BY (Interview Favorite)
+
+Combine:
+domestic_customers(customer_id, city)
+international_customers(customer_id, country)
+
+Return:
+customer_id | location
+
+Sorted by customer_id.
+⚠️ Constraint: ORDER BY must be applied correctly.
+*/
+SELECT customer_id, location
+FROM (
+	SELECT customer_id, city AS location
+	FROM domestic_customers
+	UNION
+	SELECT customer_id, country AS location
+	FROM international_customers
+) t 
+ORDER BY customer_id;
+
+/*
+Q6. Performance Thinking
+Same table:
+transactions(txn_id, user_id)
+
+Query A:
+
+SELECT user_id FROM transactions
+UNION
+SELECT user_id FROM transactions;
+
+Query B:
+
+SELECT user_id FROM transactions
+UNION ALL
+SELECT user_id FROM transactions;
+
+👉 Which is faster and why?
+*/
+-- Query B is faster than Query A 
+-- As, we have one common table on which the UNION clause implemented - UNION ALL is the combinations of all columns with considering the duplicates while UNION is the combination without duplicates. Query B will execute fasting with resulting all the rows belonging to the column user_id while Query A will execute witth resulting DISTINCT row values for column name user_id 
+
+/*
+🔹 PART 2 — VIEWS (Very Important for Real Jobs)
+Q7. Basic View
+
+Table:
+employees(emp_id, dept_id, salary)
+
+Create a view that shows only employees earning more than 60,000.
+*/
+CREATE VIEW high_salary AS IF NOT EXISTS (
+	SELECT emp_id, salary
+	FROM employees
+	WHERE salary > 60000
+);
+SELECT * FROM high_salary;
+
+/*
+Q8. View with Aggregation
+
+Create a view that returns:
+dept_id | avg_salary
+*/
+CREATE VIEW dept_average_salary AS (
+	SELECT dept_id, AVG(salary) AS avg_salary
+	FROM employees
+	GROUP BY dept_id
+);
+
+SELECT * FROM dept_average_salary;
+
+/*
+Q9. View + WHERE Clause
+Using the view from Q8, return departments where avg_salary > 70,000.
+*/
+CREATE VIEW dept_average_salary1 AS (
+	SELECT dept_id, AVG(salary) AS avg_salary
+	FROM employees
+	GROUP BY dept_id
+	HAVING AVG(salary) > 70000
+);
+
+SELECT * FROM dept_average_salary1;
+
+/*
+Q10. Update Through View ⚠️
+View:
+high_paid_employees(emp_id, salary)
+
+Based on:
+employees
+👉 Can you UPDATE salary using this view?
+If yes → when?
+If no → why?
+(Answer in words, not SQL.)
+*/
+-- no we can't update the salary in the view | to update the salary we need to UPDATE in employees table not View
+-- yes, to the questions as we can update the filtering/GROUPING/aggregating condition in view or modify the view by adding/removing the columns
+
+/*
+Q11. View with JOIN
+
+Tables:
+orders(order_id, customer_id, amount)
+customers(customer_id, city)
+
+Create a view showing order_id, amount, city.
+*/
+CREATE VIEW view1 AS (
+	SELECT o.order_id, o.amount, c.city 
+	FROM orders o 
+	JOIN customers c 
+	ON o.customer_id = c.customer_id
+);
+
+SELECT * FROM view1;
+
+/*
+Q12. Drop vs Replace
+What is the difference between:
+
+DROP VIEW
+CREATE OR REPLACE VIEW
+
+Give one real use case.
+*/
+-- DROP VIEW- deleting the entire views entities and structure from the schemas
+-- REPLACE VIEW - modifying existing View
+-- CREATE VIEW - creation of new View 
+-- DROP TABLE table1; - deleting entire table1 entities and structure from the schemas
+-- TRUNCATE table1; - deleting all the entities(row data) from the table1 without deleting the structure of table1 
+-- DELETE FROM table WHERE id1 = 1; - deleting the row_data where the condition is meet and without condition DELETE is same functinality as TRUNCATE
+
+/*
+🔹 PART 3 — EXTRA PRACTICE (Your Weak Zones 🔥)
+Q13. EXISTS vs IN (NULL Trap)
+
+Tables:
+customers(customer_id)
+orders(order_id, customer_id)
+
+Return customers who never placed an order.
+
+👉 Write 2 queries:
+One using NOT IN
+One using NOT EXISTS
+Then answer: which is safer and why?
+*/
+SELECT customer_id
+FROM customers
+WHERE customer_id NOT IN (
+	SELECT customer_id
+	FROM orders
+);
+
+SELECT c.customer_id
+FROM customers c
+WHERE NOT EXISTS IN (
+	SELECT o.customer_id
+	FROM orders o 
+	WHERE c.customer_id = o.customer_id
+);
+
+-- I feel both NOT IN and NOT EXISTS are safe and fast in execution
+
+/*
+Q14. Window Frame Trap
+Table:
+employees(emp_id, dept_id, salary)
+
+Write a query that returns:
+emp_id | salary | dept_min_salary
+
+👉 Must use LAST_VALUE
+👉 Must give correct result
+*/
+SELECT emp_id, salary, 
+	LAST_VALUE(salary) OVER(
+		PARTITION BY dept_id
+		ORDER BY salary DESC
+		ROW BETWEEN UNBOUNDED PRECEEDING AND UNBOUNDED FOLLOWING
+		) AS dept_min_salary
+FROM employees;
+
+/*
+Q15. UNION + Window Function (Hard)
+Tables:
+sales_online(order_id, amount, sale_date)
+sales_store(order_id, amount, sale_date)
+
+Combine both sources and return:
+order_id | amount | running_total
+
+Where running_total is ordered by sale_date.
+*/
+-- I am not aware of it. I have to learn this topic first
+
+/*
+Q16. NTILE + UNION
+Combine two employee tables:
+
+india_employees(emp_id, salary)
+us_employees(emp_id, salary)
+
+Return top 20% highest paid employees globally.
+*/
+-- I am not aware of it. I have to learn this topic first
+
+/*
+Q17. View + Window Function (Real Project Style)
+Create a view that shows:
+
+emp_id | dept_id | salary | dept_rank
+
+Where dept_rank is salary rank within department.
+*/
+CREATE VIEW v1 AS (
+	SELECT emp_id, dept_id, salary, 
+		DENSE_RANK() OVER(PARTITION BY dept_id ORDER BY salary DESC) AS dept_rank
+	FROM employees
+);
+
+SELECT * FROM v1;
