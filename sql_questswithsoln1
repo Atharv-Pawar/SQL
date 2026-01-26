@@ -7,12 +7,9 @@ offline_orders(order_id, customer_id)
 
 Return unique customer_ids who placed orders from either source.
 */
-SELECT DISTINCT(customer_id) 
-FROM (
-	SELECT * FROM online_orders
-	UNION
-	SELECT * FROM offline_orders
-);
+SELECT customer_id FROM online_orders
+UNION
+SELECT customer_id FROM offline_orders;
 
 /*
 Q2. UNION ALL vs UNION
@@ -21,13 +18,13 @@ Same tables as Q1.
 Return total number of orders placed, counting duplicates if the same order exists in both tables.
 👉 Decide: UNION or UNION ALL?
 */
-SELECT customer_id, COUNT(*) AS totalNumberOfOrders
+SELECT COUNT(*) AS total_orders
 FROM (
-	SELECT * FROM online_orders
-	UNION ALL
-	SELECT * FROM offline_orders
-) t
-GROUP BY customer_id; 
+    SELECT order_id FROM online_orders
+    UNION ALL
+    SELECT order_id FROM offline_orders
+) t;
+
 -- UNION ALL - all values from combinationation with duplicates | UNION - all values from combinations withut duplicates
 
 /*
@@ -42,10 +39,10 @@ id | name | type
 
 Where type = 'EMPLOYEE' or 'CONTRACTOR'.
 */
-SELECT emp_id, emp_name, SET type = 'EMPLOYEE'
+SELECT emp_id AS id, emp_name AS name, 'EMPLOYEE' AS type
 FROM employees
-UNION 
-SELECT contractor_id, contractor_name, SET type = 'CONTRACTOR'
+UNION
+SELECT contractor_id AS id, contractor_name AS name, 'CONTRACTOR' AS type
 FROM contractors;
 
 /*
@@ -57,13 +54,14 @@ sales_2025(order_id, amount, sale_date)
 
 Return all orders after 1st Jan 2025, without duplicates.
 */
-SELECT DISTINCT order_id 
-FROM (
-	SELECT * FROM sales_2024
-	UNION 
-	SELECT * FROM sales__2025
-) t 
+SELECT order_id, amount, sale_date
+FROM sales_2024
+WHERE sale_date > '2025-01-01'
+UNION
+SELECT order_id, amount, sale_date
+FROM sales_2025
 WHERE sale_date > '2025-01-01';
+-- Filtering after UNION is inefficient | DISTINCT unnecessary because UNION already dedups
 
 /*
 Q5. UNION with ORDER BY (Interview Favorite)
@@ -107,8 +105,8 @@ SELECT user_id FROM transactions;
 
 👉 Which is faster and why?
 */
--- Query B is faster than Query A 
--- As, we have one common table on which the UNION clause implemented - UNION ALL is the combinations of all columns with considering the duplicates while UNION is the combination without duplicates. Query B will execute fasting with resulting all the rows belonging to the column user_id while Query A will execute witth resulting DISTINCT row values for column name user_id 
+--UNION performs duplicate elimination (sorting or hashing), which is expensive.
+--UNION ALL simply appends rows, so it is faster and uses fewer resources.
 
 /*
 🔹 PART 2 — VIEWS (Very Important for Real Jobs)
@@ -119,12 +117,11 @@ employees(emp_id, dept_id, salary)
 
 Create a view that shows only employees earning more than 60,000.
 */
-CREATE VIEW high_salary AS IF NOT EXISTS (
-	SELECT emp_id, salary
+CREATE VIEW high_salary AS
+	SELECT emp_id, dept_id, salary
 	FROM employees
-	WHERE salary > 60000
-);
-SELECT * FROM high_salary;
+	WHERE salary > 60000;
+
 
 /*
 Q8. View with Aggregation
@@ -132,26 +129,17 @@ Q8. View with Aggregation
 Create a view that returns:
 dept_id | avg_salary
 */
-CREATE VIEW dept_average_salary AS (
+CREATE VIEW dept_average_salary AS
 	SELECT dept_id, AVG(salary) AS avg_salary
 	FROM employees
-	GROUP BY dept_id
-);
-
-SELECT * FROM dept_average_salary;
+	GROUP BY dept_id;
 
 /*
 Q9. View + WHERE Clause
 Using the view from Q8, return departments where avg_salary > 70,000.
 */
-CREATE VIEW dept_average_salary1 AS (
-	SELECT dept_id, AVG(salary) AS avg_salary
-	FROM employees
-	GROUP BY dept_id
-	HAVING AVG(salary) > 70000
-);
-
-SELECT * FROM dept_average_salary1;
+SELECT * FROM dept_average_salary
+WHERE avg_salary > 70000;
 
 /*
 Q10. Update Through View ⚠️
@@ -165,8 +153,7 @@ If yes → when?
 If no → why?
 (Answer in words, not SQL.)
 */
--- no we can't update the salary in the view | to update the salary we need to UPDATE in employees table not View
--- yes, to the questions as we can update the filtering/GROUPING/aggregating condition in view or modify the view by adding/removing the columns
+-- A simple view on a single table can be updatable. Aggregated or joined views are not updatable.
 
 /*
 Q11. View with JOIN
@@ -198,9 +185,8 @@ Give one real use case.
 -- DROP VIEW- deleting the entire views entities and structure from the schemas
 -- REPLACE VIEW - modifying existing View
 -- CREATE VIEW - creation of new View 
--- DROP TABLE table1; - deleting entire table1 entities and structure from the schemas
--- TRUNCATE table1; - deleting all the entities(row data) from the table1 without deleting the structure of table1 
--- DELETE FROM table WHERE id1 = 1; - deleting the row_data where the condition is meet and without condition DELETE is same functinality as TRUNCATE
+--DROP VIEW → removes the view completely
+--CREATE OR REPLACE VIEW → updates definition without breaking dependencies
 
 /*
 🔹 PART 3 — EXTRA PRACTICE (Your Weak Zones 🔥)
@@ -217,22 +203,27 @@ One using NOT IN
 One using NOT EXISTS
 Then answer: which is safer and why?
 */
+-- NOT IN (dangerous)
 SELECT customer_id
 FROM customers
 WHERE customer_id NOT IN (
-	SELECT customer_id
-	FROM orders
+    SELECT customer_id
+    FROM orders
+    WHERE customer_id IS NOT NULL
 );
 
+-- NOT EXISTS (safe)
 SELECT c.customer_id
 FROM customers c
-WHERE NOT EXISTS IN (
-	SELECT o.customer_id
-	FROM orders o 
-	WHERE c.customer_id = o.customer_id
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM orders o
+    WHERE o.customer_id = c.customer_id
 );
 
--- I feel both NOT IN and NOT EXISTS are safe and fast in execution
+-- Correct conclusion
+--❌ NOT IN is unsafe if subquery returns NULL
+--✅ NOT EXISTS is always safe
 
 /*
 Q14. Window Frame Trap
@@ -245,13 +236,14 @@ emp_id | salary | dept_min_salary
 👉 Must use LAST_VALUE
 👉 Must give correct result
 */
-SELECT emp_id, salary, 
-	LAST_VALUE(salary) OVER(
-		PARTITION BY dept_id
-		ORDER BY salary DESC
-		ROW BETWEEN UNBOUNDED PRECEEDING AND UNBOUNDED FOLLOWING
-		) AS dept_min_salary
+SELECT emp_id, salary,
+LAST_VALUE(salary) OVER (
+    PARTITION BY dept_id
+    ORDER BY salary DESC
+    ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
+) AS dept_min_salary
 FROM employees;
+
 
 /*
 Q15. UNION + Window Function (Hard)
