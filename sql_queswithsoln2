@@ -37,7 +37,7 @@ Where source is 'Q1' or 'Q2'.
 */
 SELECT order_id, amount, 'Q1' AS source FROM sales_q1
 UNION ALL
-SELECT order_id, amount, 'Q2' AS source FROM sales q2;
+SELECT order_id, amount, 'Q2' AS source FROM sales_q2;
 
 /*
 Q4. ⚠️ Performance Thinking
@@ -70,16 +70,14 @@ Return customers who placed at least one order.
 👉 Must use EXISTS.
 */
 SELECT c.customer_id
-FROM customers c 
+FROM customers c
 WHERE EXISTS (
-	SELECT 1
-	FROM orders o 
-	WHERE o.customer_id = c.customer_id 
-)
-AND c.customer_id = ANY (
-	SELECT o.customer_id
-	FROM orders o 
+    SELECT 1
+    FROM orders o
+    WHERE o.customer_id = c.customer_id
 );
+
+-- 🧠 EXISTS already guarantees presence — ANY adds nothing.
 
 /*
 Q6. ⚠️ NULL Trap
@@ -116,6 +114,19 @@ WHERE EXISTS (
 	HAVING COUNT(*) > 1
 );
 
+-- 🧠 This shows pure EXISTS logic without aggregation.
+SELECT DISTINCT e.emp_id
+FROM employees e
+WHERE EXISTS (
+    SELECT 1
+    FROM projects p1
+    JOIN projects p2
+      ON p1.emp_id = p2.emp_id
+     AND p1.project_id <> p2.project_id
+    WHERE p1.emp_id = e.emp_id
+);
+
+
 /*
 Q8. 💀 Killer Logic
 
@@ -129,16 +140,21 @@ Have at least one transaction > 10,000
 Have no transaction < 500
 👉 Use EXISTS + NOT EXISTS.
 */
-SELECT user_id FROM transactions 
-WHERE EXISTS amount = ANY (
-	SELECT 1
-	FROM transactions 
-	WHERE amount > 10000
-) AND NOT EXISTS amount = ALL (
-	SELECT 1
-	FROM transactions 
-	WHERE amount < 500
+SELECT DISTINCT t.user_id
+FROM transactions t
+WHERE EXISTS (
+    SELECT 1
+    FROM transactions t1
+    WHERE t1.user_id = t.user_id
+      AND t1.amount > 10000
+)
+AND NOT EXISTS (
+    SELECT 1
+    FROM transactions t2
+    WHERE t2.user_id = t.user_id
+      AND t2.amount < 500
 );
+
 
 /*
 🔹 SET 3 — VIEWS (Real Job Level)
@@ -156,14 +172,15 @@ emp_id | dept_id | salary
 
 Only for employees earning above department average.
 */
-CREATE VIEW v1 AS 
-	SELECT emp_id, dept_id, salary
-	FROM employees
-	WHERE salary > (
+CREATE VIEW v_emp_above_dept_avg AS
+	SELECT e.emp_id, e.dept_id, e.salary
+	FROM employees e
+	WHERE e.salary > (
 		SELECT AVG(salary)
 		FROM employees
-		GROUP BY dept_id
-		);
+		WHERE dept_id = e.dept_id
+	);
+
 
 /*
 Q10. ⚠️ Conceptual
@@ -176,7 +193,10 @@ YES / NO
 
 Give one precise reason
 */
--- YES it is updatable. we change the filtering condition or any other thing also as this view is implemented on single table. If there is a join of two tables then the view was not updatable/modified
+--Answer is NO, not YES.
+--🧠 Reason (precise interview answer)
+--The view contains a subquery with aggregation (AVG), so it is not updatable.
+--Your explanation about joins is partially true, but aggregation alone already makes it non-updatable.
 
 /*
 Q11.
@@ -193,10 +213,13 @@ order_id | amount | city
 
 Only for customers from Mumbai.
 */
-CREATE VIEW v1 AS 
+CREATE VIEW v_mumbai_orders AS
 	SELECT o.order_id, o.amount, c.city
-	FROM orders o JOIN customers c ON o.customer_id = c.customer_id
+	FROM orders o
+	JOIN customers c 
+	ON o.customer_id = c.customer_id
 	WHERE c.city = 'Mumbai';
+
 
 /*
 🔹 SET 4 — UNION + Window Functions (Allowed Ones Only)
@@ -221,11 +244,15 @@ order_id, order_date, amount, running_sum
 2	1-1-2020	150		250
 3	2-1-2020	85		335	
 */
-SELECT order_id, amount, SUM(amount)OVER(ORDER BY order_date) AS running_total
-FROM online_orders
-UNION
-SELECT order_id, amount, SUM(amount)OVER(ORDER BY order_date) AS running_total
-FROM store_orders;
+SELECT order_id, amount,
+       SUM(amount) OVER (ORDER BY order_date) AS running_total
+FROM (
+    SELECT order_id, amount, order_date FROM online_orders
+    UNION ALL
+    SELECT order_id, amount, order_date FROM store_orders
+) t;
+
+--🧠 Always UNION first, window after.
 
 /*
 Q13. ⚠️ Interview Favorite
@@ -234,12 +261,21 @@ Same tables as Q12.
 
 Return latest order per day after combining both tables.
 */
-SELECT FIRST_VALUE(order_id) OVER(PARTITION BY order_date ORDER BY order_date DESC) AS latest_order
+SELECT order_date, order_id
 FROM (
-	SELECT * FROM online_orders
-	UNION
-	SELECT * FROM store_orders 
-	);
+    SELECT *,
+           ROW_NUMBER() OVER (
+               PARTITION BY order_date
+               ORDER BY order_id DESC
+           ) rn
+    FROM (
+        SELECT * FROM online_orders
+        UNION ALL
+        SELECT * FROM store_orders
+    ) t
+) x
+WHERE rn = 1;
+
 
 /*
 🔹 SET 5 — Debug & Fix (Very Important)
@@ -276,3 +312,9 @@ CREATE VIEW high_salary_emps AS
 	FROM employees
 	GROUP BY emp_id
 	HAVING SUM(salary) > 60000;
+	
+--- OR ----
+CREATE VIEW high_salary_emps AS
+	SELECT emp_id, salary
+	FROM employees
+	WHERE salary > 60000;
