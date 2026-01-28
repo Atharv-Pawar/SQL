@@ -1,0 +1,278 @@
+/*
+🔹 SET 1 — UNION / UNION ALL (Thinking + Accuracy)
+Q1.
+
+Tables:
+current_users(user_id)
+archived_users(user_id)
+Return all unique users who ever existed in the system.
+*/
+SELECT user_id FROM current_users
+UNION
+SELECT user_id FROM archived_users;
+
+/*
+Q2. ⚠️ Interview Trap
+Same tables as Q1.
+Return total number of user records, including duplicates.
+👉 Use only ONE set operator.
+*/
+SELECT COUNT(*) AS total_users
+FROM (
+	SELECT user_id FROM current_users
+	UNION ALL
+	SELECT user_id FROM archived_users;
+) t;
+
+/*
+Q3.
+Tables:
+sales_q1(order_id, amount)
+sales_q2(order_id, amount)
+
+Return:
+order_id | amount | source
+
+Where source is 'Q1' or 'Q2'.
+*/
+SELECT order_id, amount, 'Q1' AS source FROM sales_q1
+UNION ALL
+SELECT order_id, amount, 'Q2' AS source FROM sales q2;
+
+/*
+Q4. ⚠️ Performance Thinking
+
+Which is better and why?
+
+SELECT user_id FROM users
+UNION
+SELECT user_id FROM users;
+
+
+vs
+
+SELECT DISTINCT user_id FROM users;
+(Answer in words)
+*/
+SELECT DISTINCT user_id FROM users; -- is better bcoz UNION implementation is costly as it req. sorting or hashing to remove duplicates after merging two tables 
+
+
+/*
+🔹 SET 2 — EXISTS / NOT EXISTS (Your Core Weak Zone 🔥)
+Q5.
+
+Tables:
+
+customers(customer_id)
+orders(order_id, customer_id)
+
+Return customers who placed at least one order.
+👉 Must use EXISTS.
+*/
+SELECT c.customer_id
+FROM customers c 
+WHERE EXISTS (
+	SELECT 1
+	FROM orders o 
+	WHERE o.customer_id = c.customer_id 
+)
+AND c.customer_id = ANY (
+	SELECT o.customer_id
+	FROM orders o 
+);
+
+/*
+Q6. ⚠️ NULL Trap
+
+Same tables.
+Return customers who never placed an order.
+👉 Must use NOT EXISTS.
+*/
+SELECT c.customer_id
+FROM customers c 
+WHERE NOT EXISTS (
+	SELECT 1
+	FROM orders o 
+	WHERE o.customer_id = c.customer_id 
+);
+
+/*
+Q7.
+Tables:
+
+employees(emp_id)
+projects(emp_id)
+
+Return employees who are assigned to more than one project.
+👉 Use EXISTS **(not GROUP BY)**.
+*/
+SELECT e.emp_id
+FROM employees e 
+WHERE EXISTS (
+	SELECT p.emp_id 
+	FROM projects p 
+	WHERE p.emp_id = e.emp_id 
+	GROUP BY p.emp_id 
+	HAVING COUNT(*) > 1
+);
+
+/*
+Q8. 💀 Killer Logic
+
+Tables:
+transactions(user_id, amount)
+
+Return users who:
+
+Have at least one transaction > 10,000
+
+Have no transaction < 500
+👉 Use EXISTS + NOT EXISTS.
+*/
+SELECT user_id FROM transactions 
+WHERE EXISTS amount = ANY (
+	SELECT 1
+	FROM transactions 
+	WHERE amount > 10000
+) AND NOT EXISTS amount = ALL (
+	SELECT 1
+	FROM transactions 
+	WHERE amount < 500
+);
+
+/*
+🔹 SET 3 — VIEWS (Real Job Level)
+Q9.
+
+Table:
+
+employees(emp_id, dept_id, salary)
+
+
+Create a view that shows:
+
+emp_id | dept_id | salary
+
+
+Only for employees earning above department average.
+*/
+CREATE VIEW v1 AS 
+	SELECT emp_id, dept_id, salary
+	FROM employees
+	WHERE salary > (
+		SELECT AVG(salary)
+		FROM employees
+		GROUP BY dept_id
+		);
+
+/*
+Q10. ⚠️ Conceptual
+
+Is the view in Q9 updatable?
+
+Answer:
+
+YES / NO
+
+Give one precise reason
+*/
+-- YES it is updatable. we change the filtering condition or any other thing also as this view is implemented on single table. If there is a join of two tables then the view was not updatable/modified
+
+/*
+Q11.
+
+Tables:
+
+orders(order_id, customer_id, amount)
+customers(customer_id, city)
+
+
+Create a view showing:
+
+order_id | amount | city
+
+Only for customers from Mumbai.
+*/
+CREATE VIEW v1 AS 
+	SELECT o.order_id, o.amount, c.city
+	FROM orders o JOIN customers c ON o.customer_id = c.customer_id
+	WHERE c.city = 'Mumbai';
+
+/*
+🔹 SET 4 — UNION + Window Functions (Allowed Ones Only)
+Q12.
+
+Tables:
+
+online_orders(order_id, amount, order_date)
+store_orders(order_id, amount, order_date)
+
+
+Combine both sources and return:
+
+order_id | amount | running_total
+
+👉 Running total ordered by order_date
+👉 You may use SUM() OVER() (no frames).
+*/
+/*
+order_id, order_date, amount, running_sum
+1	1-1-2020	100		100
+2	1-1-2020	150		250
+3	2-1-2020	85		335	
+*/
+SELECT order_id, amount, SUM(amount)OVER(ORDER BY order_date) AS running_total
+FROM online_orders
+UNION
+SELECT order_id, amount, SUM(amount)OVER(ORDER BY order_date) AS running_total
+FROM store_orders;
+
+/*
+Q13. ⚠️ Interview Favorite
+
+Same tables as Q12.
+
+Return latest order per day after combining both tables.
+*/
+SELECT FIRST_VALUE(order_id) OVER(PARTITION BY order_date ORDER BY order_date DESC) AS latest_order
+FROM (
+	SELECT * FROM online_orders
+	UNION
+	SELECT * FROM store_orders 
+	);
+
+/*
+🔹 SET 5 — Debug & Fix (Very Important)
+Q14. ❌ What’s wrong here?
+SELECT customer_id
+FROM customers
+WHERE customer_id NOT IN (
+    SELECT customer_id FROM orders
+);
+*/
+--NOT IN - is dangerous, if the customer_id is NULL 
+-- so we go with safer side using NOT EXISTS
+SELECT customer_id
+FROM customers
+WHERE NOT EXISTS (
+	SELECT 1
+	FROM orders o 
+	WHERE o.customer_id = customer_id
+);
+
+/*
+Explain the issue and fix it.
+
+Q15. ❌ Fix the query
+CREATE VIEW high_salary_emps AS
+SELECT emp_id, salary
+FROM employees
+GROUP BY emp_id
+HAVING salary > 60000;
+*/
+-- HAVING clause always have filter condition on aggregate functions likes AVG, SUM, MIN, MAX, COUNT, etc after grouping 
+CREATE VIEW high_salary_emps AS
+	SELECT emp_id, SUM(salary) AS high_salary 
+	FROM employees
+	GROUP BY emp_id
+	HAVING SUM(salary) > 60000;
