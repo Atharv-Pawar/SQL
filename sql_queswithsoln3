@@ -7,9 +7,38 @@ offline_users(user_id)
 
 Return users who exist in exactly one table (not both).
 */
-SELECT user_id FROM online_users
-UNION
-SELECT user_id FROM offline_users;
+SELECT user_id
+FROM online_users ou
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM offline_users ofl
+    WHERE ofl.user_id = ou.user_id
+)
+
+UNION ALL
+
+SELECT user_id
+FROM offline_users ofl
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM online_users ou
+    WHERE ou.user_id = ofl.user_id
+);
+
+/*
+Key interview takeaway (MEMORIZE THIS)
+UNION answers:
+“Who exists in at least one table?”
+
+Requirement asks:
+“Who exists in exactly one table?”
+
+These are different questions.
+
+Ultra-short explanation (perfect interview answer)
+UNION removes duplicates but does not exclude values present in both tables.
+To get users in exactly one table, we must explicitly remove the intersection using NOT EXISTS.
+*/
 
 /*
 Q2. ⚠️ Interview Trap
@@ -82,7 +111,7 @@ WHERE NOT EXISTS (
 	SELECT 1
 	FROM attendance a 
 	WHERE a.emp_id = e.emp_id 
-	AND EXTRACT(DAYNAME FROM login_date) = 'Sunday'
+	AND DAYNAME(a.login_date) = 'Sunday'
 );
 
 /*
@@ -181,7 +210,7 @@ Ranges:
 SELECT CASE 
 	WHEN salary < 50000 THEN '< 50k'
 	WHEN salary BETWEEN 50000 AND 80000 THEN '50k–80k'
-	ELSE '80k'
+	ELSE '> 80k'
   END AS salary_range, COUNT(*) AS employee_count
 FROM employees
 GROUP BY salary_range;
@@ -198,6 +227,11 @@ SELECT order_id
 FROM orders 
 WHERE DATEDIFF(CURRENT_DATE, order_date) <= 30;
 --Is INTERVAL posssible then what will be the syntax and logic?
+
+SELECT order_id
+FROM orders
+WHERE order_date >= CURRENT_DATE - INTERVAL '30 DAY';
+
 
 /*
 Q12.
@@ -235,8 +269,9 @@ employee_salary(emp_id, salary_month, salary)
 Return:
 emp_id | salary_month | salary | previous_salary
 */
+--✅ Correct:
 SELECT emp_id, salary_month, salary, 
-	LAG(salary) OVER(ORDER BY salary_month) AS previous_salary
+	LAG(salary) OVER(PARTITION BY emp_id ORDER BY salary_month) AS previous_salary
 FROM employee_salary;
 
 /*
@@ -246,9 +281,16 @@ sales(order_date, amount)
 
 Return daily total sales along with previous day’s total.
 */
-SELECT order_date, amount, 
-	SUM(amount) OVER(ORDER BY order_date) AS previous_total
-FROM sales;
+--✅ Correct:
+SELECT order_date,
+       daily_total,
+       LAG(daily_total) OVER (ORDER BY order_date) AS previous_day_total
+FROM (
+    SELECT order_date, SUM(amount) AS daily_total
+    FROM sales
+    GROUP BY order_date
+) t;
+
 
 /*
 🔹 SET 7 — Views (Practical)
@@ -258,6 +300,7 @@ Create a view showing employees whose salary is above company average.
 */
 CREATE VIEW high_avg_salary AS 
 	SELECT emp_id, salary
+	FROM employees
 	WHERE salary > (
 		SELECT AVG(salary)
 		FROM employees
@@ -269,7 +312,8 @@ Q17. ⚠️ Conceptual
 Can the view in Q16 be updated?
 Answer YES / NO with one reason.
 */
---NO as average condition is implemented on filter
+-- NO
+-- View contains a subquery with aggregate, making it non-updatable.
 
 /*
 🔹 SET 8 — Debug & Fix (Must Explain)
@@ -312,10 +356,17 @@ Return users who have exactly one transaction.
 👉 No GROUP BY in outer query
 👉 Use EXISTS / NOT EXISTS
 */
-SELECT user_id 
+-- ✅ Correct (EXISTS + NOT EXISTS)
+SELECT t.user_id
 FROM transactions t
 WHERE EXISTS (
-	SELECT 1
-	FROM transactions t1
-	WHERE t1.user_id = t.user_id
-	);
+    SELECT 1
+    FROM transactions t1
+    WHERE t1.user_id = t.user_id
+)
+AND NOT EXISTS (
+    SELECT 1
+    FROM transactions t2
+    WHERE t2.user_id = t.user_id
+      AND t2.rowid <> t.rowid
+);
