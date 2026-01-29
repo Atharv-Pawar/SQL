@@ -1,0 +1,321 @@
+/*
+🔹 SET 1 — UNION / UNION ALL (Logic Upgrade)
+Q1.
+Tables:
+online_users(user_id)
+offline_users(user_id)
+
+Return users who exist in exactly one table (not both).
+*/
+SELECT user_id FROM online_users
+UNION
+SELECT user_id FROM offline_users;
+
+/*
+Q2. ⚠️ Interview Trap
+
+Tables:
+employees_2024(emp_id)
+employees_2025(emp_id)
+
+Return total employee records including duplicates, but show only one column.
+*/
+SELECT COUNT(*) AS total_employees
+FROM (
+	SELECT emp_id FROM employees_2024
+	UNION ALL 
+	SELECT emp_id FROM employees_2025
+) t;
+
+/*
+Q3.
+Tables:
+sales_april(order_id, amount)
+sales_may(order_id, amount)
+
+Return:
+order_id | amount | month
+
+👉 Use a single UNION query.
+*/
+SELECT order_id, amount, 'April' AS 'month' FROM sales_april
+UNION ALL 
+SELECT order_id, amount, 'May' AS 'month' FROM sales_may;
+
+/*
+🔹 SET 2 — EXISTS / NOT EXISTS (Core Strengthening)
+Q4.
+
+Tables:
+customers(customer_id)
+orders(order_id, customer_id, order_date)
+
+Return customers who placed an order in 2025.
+
+👉 Must use EXISTS
+👉 No JOIN
+*/
+SELECT c.customer_id 
+FROM customers c 
+WHERE EXISTS (
+	SELECT 1
+	FROM orders o 
+	WHERE o.customer_id = c.customer_id
+	AND EXTRACT(YEAR FROM order_date) = '2025'
+);
+
+/*
+Q5. ⚠️ Logic Precision
+
+Tables:
+employees(emp_id)
+attendance(emp_id, login_date)
+
+Return employees who never logged in on a Sunday.
+
+👉 Use NOT EXISTS
+👉 Assume DAYNAME(login_date)
+*/
+SELECT e.emp_id
+FROM employees e 
+WHERE NOT EXISTS (
+	SELECT 1
+	FROM attendance a 
+	WHERE a.emp_id = e.emp_id 
+	AND EXTRACT(DAYNAME FROM login_date) = 'Sunday'
+);
+
+/*
+Q6.
+Tables:
+products(product_id)
+order_items(product_id, quantity)
+
+Return products that were ordered at least once.
+
+👉 Use EXISTS
+👉 No GROUP BY
+*/
+SELECT p.product_id
+FROM products p 
+WHERE EXISTS (
+	SELECT 1
+	FROM order_items o 
+	WHERE o.product_id = p.product_id
+);
+
+/*
+🔹 SET 3 — ANY / ALL (Comparison Mastery)
+Q7.
+
+Table:
+employees(emp_id, salary)
+
+Return employees whose salary is greater than ANY salary in department 10.
+*/
+SELECT emp_id
+FROM employees
+WHERE salary > ANY (
+	SELECT salary
+	FROM employees 
+	WHERE dept_id = 10
+);
+
+/*
+Q8. ⚠️ Interview Favorite
+
+Table:
+students(student_id, marks)
+
+Return students whose marks are greater than ALL students who failed (marks < 40).
+*/
+SELECT student_id 
+FROM students 
+WHERE marks > ALL (
+	SELECT marks 
+	FROM students
+	WHERE marks < 40
+);
+
+/*
+🔹 SET 4 — CASE WHEN + Aggregation
+Q9.
+
+Table:
+orders(order_id, amount)
+
+Return:
+order_id | order_category
+
+Rules:
+amount ≥ 10000 → 'High'
+
+5000–9999 → 'Medium'
+
+else → 'Low'
+*/
+SELECT order_id, CASE 
+	WHEN amount >= 10000 THEN 'High'
+	WHEN amount BETWEEN 5000 AND 9999 THEN 'Medium'
+	ELSE 'Low'
+  END AS order_category
+FROM orders;
+
+/*
+Q10.
+Table:
+employees(emp_id, salary)
+
+Return:
+salary_range | employee_count
+
+
+Ranges:
+
+< 50k
+
+50k–80k
+
+80k
+*/
+SELECT CASE 
+	WHEN salary < 50000 THEN '< 50k'
+	WHEN salary BETWEEN 50000 AND 80000 THEN '50k–80k'
+	ELSE '80k'
+  END AS salary_range, COUNT(*) AS employee_count
+FROM employees
+GROUP BY salary_range;
+
+/*
+🔹 SET 5 — Date Functions
+Q11.
+Table:
+orders(order_id, order_date)
+
+Return orders placed in the last 30 days.
+*/
+SELECT order_id
+FROM orders 
+WHERE DATEDIFF(CURRENT_DATE, order_date) <= 30;
+--Is INTERVAL posssible then what will be the syntax and logic?
+
+/*
+Q12.
+Table:
+employees(emp_id, joining_date)
+
+Return employees who joined in the same month as today (any year).
+*/
+SELECT emp_id
+FROM employees 
+WHERE EXTRACT(MONTH FROM joining_date) = EXTRACT(MONTH FROM CURRENT_DATE);
+
+/*
+🔹 SET 6 — Window Functions (No Frames)
+Q13.
+
+Table:
+employees(emp_id, dept_id, salary)
+
+Return highest paid employee per department.
+*/
+SELECT emp_id, dept_id, salary
+FROM (
+	SELECT *, 
+		DENSE_RANK() OVER(PARTITION BY dept_id ORDER BY salary DESC) AS dr 
+	FROM employees
+) t 
+WHERE t.dr = 1;
+
+/*
+Q14. ⚠️
+Table:
+employee_salary(emp_id, salary_month, salary)
+
+Return:
+emp_id | salary_month | salary | previous_salary
+*/
+SELECT emp_id, salary_month, salary, 
+	LAG(salary) OVER(ORDER BY salary_month) AS previous_salary
+FROM employee_salary;
+
+/*
+Q15.
+Table:
+sales(order_date, amount)
+
+Return daily total sales along with previous day’s total.
+*/
+SELECT order_date, amount, 
+	SUM(amount) OVER(ORDER BY order_date) AS previous_total
+FROM sales;
+
+/*
+🔹 SET 7 — Views (Practical)
+Q16.
+
+Create a view showing employees whose salary is above company average.
+*/
+CREATE VIEW high_avg_salary AS 
+	SELECT emp_id, salary
+	WHERE salary > (
+		SELECT AVG(salary)
+		FROM employees
+		);
+
+/*
+Q17. ⚠️ Conceptual
+
+Can the view in Q16 be updated?
+Answer YES / NO with one reason.
+*/
+--NO as average condition is implemented on filter
+
+/*
+🔹 SET 8 — Debug & Fix (Must Explain)
+Q18. ❌ What’s wrong?
+SELECT emp_id, MAX(salary)
+FROM employees;
+*/
+SELECT emp_id, salary AS highest_salary
+FROM employees
+WHERE salary = (SELECT MAX(salary) FROM employees);
+-- If you want to display emp_id with highest salary
+
+SELECT MAX(salary) AS highest_salary
+FROM employees;
+-- If you want to display only the highest salary
+
+-- MAX(salary) is the Aggregation function and this Aggregation function returns the result in single row if there are unique salaries of employees and DISPLAYing emp_id of each employees with this Aggregation function is not possible as only one emp_id has the MAXimum salary inthe table employees
+
+/*
+Q19. ❌ Fix the query
+SELECT dept_id, COUNT(salary)
+FROM employees
+WHERE COUNT(salary) > 5
+GROUP BY dept_id;
+*/
+SELECT dept_id, COUNT(salary)
+FROM employees
+GROUP BY dept_id
+HAVING COUNT(salary) > 5;
+
+/*
+Q20. 💀 Killer Question
+
+Tables:
+
+transactions(user_id, amount)
+
+
+Return users who have exactly one transaction.
+👉 No GROUP BY in outer query
+👉 Use EXISTS / NOT EXISTS
+*/
+SELECT user_id 
+FROM transactions t
+WHERE EXISTS (
+	SELECT 1
+	FROM transactions t1
+	WHERE t1.user_id = t.user_id
+	);
