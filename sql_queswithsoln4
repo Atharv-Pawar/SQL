@@ -4,20 +4,13 @@
 -- active_customers(customer_id)
 -- inactive_customers(customer_id)
 -- Return customers who were active at some point but are NOT active now.
-SELECT customer_id 
-FROM inactive_customers ic 
-WHERE EXISTS (
-	SELECT 1
-	FROM active_customers ac 
-	WHERE ac.customer_id = ic.customer_id
-)
-UNION ALL
-SELECT customer_id
-FROM active_customers ac 
+-- ✅ Correct query
+SELECT ic.customer_id
+FROM inactive_customers ic
 WHERE NOT EXISTS (
-	SELECT 1 
-	FROM inactive_customers ic 
-	WHERE ic.customer_id = ac.customer_id
+    SELECT 1
+    FROM active_customers ac
+    WHERE ac.customer_id = ic.customer_id
 );
 
 -- Q2. ⚠️ Interview Trap
@@ -34,6 +27,11 @@ FROM (
 ) t
 GROUP BY order_id
 HAVING COUNT(*) > 1;
+
+-- OR --
+SELECT order_id FROM orders_2023
+INTERSECT
+SELECT order_id FROM orders_2024;
 
 -- 🔹 SET 2 — EXISTS / NOT EXISTS (Logic Depth)
 -- Q3.
@@ -56,6 +54,27 @@ WHERE NOT EXISTS (
 -- Return customers who placed orders only once.
 -- 👉 Use EXISTS / NOT EXISTS
 -- 👉 No GROUP BY in outer query
+-- ✅ Correct query
+SELECT c.customer_id
+FROM customers c
+WHERE EXISTS (
+    SELECT 1
+    FROM orders o1
+    WHERE o1.customer_id = c.customer_id
+)
+AND NOT EXISTS (
+    SELECT 1
+    FROM orders o2
+    WHERE o2.customer_id = c.customer_id
+    AND o2.order_id <> (
+        SELECT MIN(order_id)
+        FROM orders o3
+        WHERE o3.customer_id = c.customer_id
+    )
+);
+
+-- OR --
+
 SELECT c.customer_id 
 FROM customers c 
 WHERE EXISTS (
@@ -71,20 +90,11 @@ WHERE EXISTS (
 -- Table:
 -- employees(emp_id, salary, dept_id)
 -- Return employees whose salary is greater than ALL salaries in department 20.
+-- ✅ Correct query
 SELECT emp_id 
 FROM employees 
 WHERE salary > ALL (
 	SELECT salary
-	FROM employees
-	WHERE dept_id = 20
-);
--- considering table with Unique dept_id 
-
--- in case more than one rows with dept_id = 20
-SELECT emp_id 
-FROM employees 
-WHERE salary > ALL (
-	SELECT MAX(salary)
 	FROM employees
 	WHERE dept_id = 20
 );
@@ -111,6 +121,16 @@ WHERE price < ANY (
 -- ≥ 5 years → Senior
 -- 2–4 years → Mid
 -- < 2 years → Junior
+-- ✅ Correct query
+SELECT emp_id,
+       CASE
+           WHEN DATEDIFF(CURRENT_DATE, joining_date) / 365 >= 5 THEN 'Senior'
+           WHEN DATEDIFF(CURRENT_DATE, joining_date) / 365 BETWEEN 2 AND 4 THEN 'Mid'
+           ELSE 'Junior'
+       END AS experience_level
+FROM employees;
+
+-- 🧠 In interviews, avoid AGE unless PostgreSQL is confirmed.
 SELECT emp_id, CASE
 	WHEN y >= 5 THEN 'Senior'
 	WHEN y BETWEEN 2 AND 4 THEN 'Mid'
@@ -144,9 +164,11 @@ GROUP BY order_category;
 -- Table:
 -- orders(order_id, order_date)
 -- Return orders placed in the previous calendar month (not last 30 days).
-SELECT order_id 
-FROM orders 
-WHERE order_date <= CURRENT_DATE - INTERVAL 30 DAYS;
+-- ✅ Correct query
+SELECT order_id
+FROM orders
+WHERE order_date >= DATE_FORMAT(CURRENT_DATE - INTERVAL 1 MONTH, '%Y-%m-01')
+  AND order_date <  DATE_FORMAT(CURRENT_DATE, '%Y-%m-01');
 
 -- Q10. ⚠️ Common Mistake
 -- Table:
@@ -154,7 +176,7 @@ WHERE order_date <= CURRENT_DATE - INTERVAL 30 DAYS;
 -- Return employees who joined on a Monday.
 SELECT emp_id 
 FROM employees
-WHERE DAY(joining_date) = 'Monday';
+WHERE DAYNAME(joining_date) = 'Monday';
 
 -- 🔹 SET 6 — Window Functions (Allowed Only)
 -- Q11.
@@ -174,46 +196,77 @@ WHERE t.lowest_first = 1;
 -- sales(order_date, amount)
 -- Return:
 -- order_date | daily_total | previous_day_total
-SELECT order_date, daily_total, previous_day_total
+-- ✅ Correct query
+SELECT order_date,
+       daily_total,
+       LAG(daily_total) OVER (ORDER BY order_date) AS previous_day_total
 FROM (
-	SELECT order_date, SUM(amount) AS daily_total,
-		LAG(daily_total) OVER(PARTITION BY order_date ORDER BY order_date) AS previous_day_total
-	FROM sales 
-	GROUP BY order_date
-);
+    SELECT order_date,
+           SUM(amount) AS daily_total
+    FROM sales
+    GROUP BY order_date
+) t;
+
 
 -- 🔹 SET 7 — Views (Real-World)
 -- Q13.
 -- Create a view that shows department-wise total salary.
 CREATE VIEW dept_total_salary AS
-	SELECT dep_id, SUM(salary) total_salary
-	FROM employees;
+SELECT dept_id, SUM(salary) AS total_salary
+FROM employees
+GROUP BY dept_id;
+
 
 -- Q14. ⚠️ Conceptual
 -- Can a view created using a window function be updated?
 -- Answer YES / NO with one precise reason.
-YES, you can modify/change SUM with AVG/MAX/MIN in the view 
+✅ Correct answer
+
+NO
+Reason:
+Views containing window functions are not updatable because they do not map rows 1-to-1 with base tables.
+
+--🧠 One-line interview answer. Memorize.
 
 -- 🔹 SET 8 — 🔥 Recursive CTE (NEW – Very Important)
 -- Q15. (Easy Start)
 -- Table:
 -- numbers(n) containing values 1–10
 -- Generate numbers from 1 to 10 using WITH RECURSIVE.
+-- ✅ Correct query
+WITH RECURSIVE nums AS (
+	SELECT 1 AS n 
+	UNION ALL 
+	SELECT n+1 
+	FROM nums 
+	WHERE n < 10
+)
+SELECT * FROM nums;
 
 -- Q16. (Classic Interview)
 -- Table:
 -- employees(emp_id, manager_id)
 -- Return employee → manager hierarchy starting from the CEO (manager_id IS NULL).
-SELECT IF(e.manager_id IS NULL, 'CEO', e.emp_name AS 'Manager')
-FROM employees e 
-JOIN employees m
-ON e.manager_id = m.emp_id;
+-- ✅ Correct query
+WITH RECURSIVE emp_tree AS (
+    SELECT emp_id, manager_id, 0 AS level
+    FROM employees
+    WHERE manager_id IS NULL
+
+    UNION ALL
+
+    SELECT e.emp_id, e.manager_id, et.level + 1
+    FROM employees e
+    JOIN emp_tree et ON e.manager_id = et.emp_id
+)
+SELECT * FROM emp_tree;
 
 -- Q17. ⚠️ Logic Depth
 -- Table:
 -- org(emp_id, manager_id, salary)
 -- Return total salary under each manager, including indirect reports.
 -- 👉 Must use recursive CTE.
+⏳ Not attempted (expected)
 
 -- 🔹 SET 9 — Debug & Fix (Think Carefully)
 -- Q18. ❌ What’s wrong?
@@ -243,3 +296,4 @@ WHERE salary = (
 -- transactions(user_id, txn_date)
 -- Return users who made transactions on exactly two consecutive days only
 -- (not more, not less).
+⏳ Not attempted (expected)
