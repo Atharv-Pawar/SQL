@@ -4,6 +4,21 @@
 -- active_customers(customer_id)
 -- inactive_customers(customer_id)
 -- Return customers who were active at some point but are NOT active now.
+SELECT customer_id 
+FROM inactive_customers ic 
+WHERE EXISTS (
+	SELECT 1
+	FROM active_customers ac 
+	WHERE ac.customer_id = ic.customer_id
+)
+UNION ALL
+SELECT customer_id
+FROM active_customers ac 
+WHERE NOT EXISTS (
+	SELECT 1 
+	FROM inactive_customers ic 
+	WHERE ic.customer_id = ac.customer_id
+);
 
 -- Q2. ⚠️ Interview Trap
 -- Tables:
@@ -11,6 +26,14 @@
 -- orders_2024(order_id)
 -- Return duplicate order_ids that exist in both tables.
 -- 👉 No JOIN allowed.
+SELECT order_id 
+FROM (
+	SELECT order_id FROM orders_2023
+	UNION ALL 
+	SELECT order_id FROM orders_2024
+) t
+GROUP BY order_id
+HAVING COUNT(*) > 1;
 
 -- 🔹 SET 2 — EXISTS / NOT EXISTS (Logic Depth)
 -- Q3.
@@ -18,6 +41,13 @@
 -- employees(emp_id)
 -- leaves(emp_id, leave_date)
 -- Return employees who never took any leave.
+SELECT emp_id 
+FROM employees e 
+WHERE NOT EXISTS (
+	SELECT 1 
+	FROM leaves le 
+	WHERE le.emp_id = e.emp_id
+);
 
 -- Q4. ⚠️ Logic Test
 -- Tables:
@@ -26,18 +56,51 @@
 -- Return customers who placed orders only once.
 -- 👉 Use EXISTS / NOT EXISTS
 -- 👉 No GROUP BY in outer query
+SELECT c.customer_id 
+FROM customers c 
+WHERE EXISTS (
+	SELECT 1
+	FROM orders o 
+	WHERE o.customer_id = c.customer_id
+	GROUP BY o.customer_id
+	HAVING COUNT(*) = 1
+);
 
 -- 🔹 SET 3 — ANY / ALL (Interview Favorite)
 -- Q5.
 -- Table:
 -- employees(emp_id, salary, dept_id)
 -- Return employees whose salary is greater than ALL salaries in department 20.
+SELECT emp_id 
+FROM employees 
+WHERE salary > ALL (
+	SELECT salary
+	FROM employees
+	WHERE dept_id = 20
+);
+-- considering table with Unique dept_id 
+
+-- in case more than one rows with dept_id = 20
+SELECT emp_id 
+FROM employees 
+WHERE salary > ALL (
+	SELECT MAX(salary)
+	FROM employees
+	WHERE dept_id = 20
+);
 
 -- Q6.
 -- Table:
 -- products(product_id, price)
 -- Return products whose price is less than ANY premium product price
 -- (premium = price > 50,000).
+SELECT product_id
+FROM products 
+WHERE price < ANY (
+	SELECT price
+	FROM products 
+	WHERE price > 50000
+);
 
 -- 🔹 SET 4 — CASE WHEN (Business Logic)
 -- Q7.
@@ -48,6 +111,15 @@
 -- ≥ 5 years → Senior
 -- 2–4 years → Mid
 -- < 2 years → Junior
+SELECT emp_id, CASE
+	WHEN y >= 5 THEN 'Senior'
+	WHEN y BETWEEN 2 AND 4 THEN 'Mid'
+	ELSE 'Junior'
+  END AS experience_level
+FROM (
+	SELECT emp_id, joining_date, AGE(CURRENT_DATE, joining_date, YEAR) AS y 
+	FROM employees
+) t;
 
 -- Q8.
 -- Table:
@@ -56,37 +128,71 @@
 -- High (>= 20000)
 -- Medium (10000–19999)
 -- Low (< 10000)
+SELECT order_category, COUNT(*) AS total_orders
+FROM (
+	SELECT order_id, amount, CASE 
+		WHEN amount >= 20000 THEN 'High'
+		WHEN amount BETWEEN 10000 AND 19999 THEN 'Medium'
+		ELSE 'Low'
+	  END AS order_category
+	FROM orders 
+) t 
+GROUP BY order_category;
 
 -- 🔹 SET 5 — Date Functions (Accuracy)
 -- Q9.
 -- Table:
 -- orders(order_id, order_date)
 -- Return orders placed in the previous calendar month (not last 30 days).
+SELECT order_id 
+FROM orders 
+WHERE order_date <= CURRENT_DATE - INTERVAL 30 DAYS;
 
 -- Q10. ⚠️ Common Mistake
 -- Table:
 -- employees(emp_id, joining_date)
 -- Return employees who joined on a Monday.
+SELECT emp_id 
+FROM employees
+WHERE DAY(joining_date) = 'Monday';
 
 -- 🔹 SET 6 — Window Functions (Allowed Only)
 -- Q11.
 -- Table:
 -- employees(emp_id, dept_id, salary)
 -- Return lowest paid employee per department.
+SELECT emp_id 
+FROM (
+	SELECT emp_id, dept_id, salary, 
+		RANK() OVER(PARTITION BY dept_id ORDER BY salary ASC) AS lowest_first
+	FROM employees
+) t 
+WHERE t.lowest_first = 1;
 
 -- Q12.
 -- Table:
 -- sales(order_date, amount)
 -- Return:
 -- order_date | daily_total | previous_day_total
+SELECT order_date, daily_total, previous_day_total
+FROM (
+	SELECT order_date, SUM(amount) AS daily_total,
+		LAG(daily_total) OVER(PARTITION BY order_date ORDER BY order_date) AS previous_day_total
+	FROM sales 
+	GROUP BY order_date
+);
 
 -- 🔹 SET 7 — Views (Real-World)
 -- Q13.
 -- Create a view that shows department-wise total salary.
+CREATE VIEW dept_total_salary AS
+	SELECT dep_id, SUM(salary) total_salary
+	FROM employees;
 
 -- Q14. ⚠️ Conceptual
 -- Can a view created using a window function be updated?
 -- Answer YES / NO with one precise reason.
+YES, you can modify/change SUM with AVG/MAX/MIN in the view 
 
 -- 🔹 SET 8 — 🔥 Recursive CTE (NEW – Very Important)
 -- Q15. (Easy Start)
@@ -98,6 +204,10 @@
 -- Table:
 -- employees(emp_id, manager_id)
 -- Return employee → manager hierarchy starting from the CEO (manager_id IS NULL).
+SELECT IF(e.manager_id IS NULL, 'CEO', e.emp_name AS 'Manager')
+FROM employees e 
+JOIN employees m
+ON e.manager_id = m.emp_id;
 
 -- Q17. ⚠️ Logic Depth
 -- Table:
@@ -111,12 +221,21 @@
 -- FROM employees
 -- WHERE AVG(salary) > 70000
 -- GROUP BY dept_id;
-
+SELECT dept_id, AVG(salary)
+FROM employees
+GROUP BY dept_id
+HAVING AVG(salary) > 70000;
 
 -- Q19. ❌ Fix the logic
 -- SELECT emp_id
 -- FROM employees
 -- WHERE salary = MAX(salary);
+SELECT emp_id 
+FROM employees
+WHERE salary = (
+	SELECT MAX(salary)
+	FROM employees
+);
 
 -- 🔹 SET 10 — 💀 Killer Question
 -- Q20.
