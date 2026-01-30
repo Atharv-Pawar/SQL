@@ -1,0 +1,126 @@
+-- 🔹 SET 1 — UNION / UNION ALL (Precision)
+-- Q1.
+-- Tables:
+-- active_customers(customer_id)
+-- inactive_customers(customer_id)
+-- Return customers who were active at some point but are NOT active now.
+
+-- Q2. ⚠️ Interview Trap
+-- Tables:
+-- orders_2023(order_id)
+-- orders_2024(order_id)
+-- Return duplicate order_ids that exist in both tables.
+-- 👉 No JOIN allowed.
+
+-- 🔹 SET 2 — EXISTS / NOT EXISTS (Logic Depth)
+-- Q3.
+-- Tables:
+-- employees(emp_id)
+-- leaves(emp_id, leave_date)
+-- Return employees who never took any leave.
+
+-- Q4. ⚠️ Logic Test
+-- Tables:
+-- customers(customer_id)
+-- orders(order_id, customer_id, amount)
+-- Return customers who placed orders only once.
+-- 👉 Use EXISTS / NOT EXISTS
+-- 👉 No GROUP BY in outer query
+
+-- 🔹 SET 3 — ANY / ALL (Interview Favorite)
+-- Q5.
+-- Table:
+-- employees(emp_id, salary, dept_id)
+-- Return employees whose salary is greater than ALL salaries in department 20.
+
+-- Q6.
+-- Table:
+-- products(product_id, price)
+-- Return products whose price is less than ANY premium product price
+-- (premium = price > 50,000).
+
+-- 🔹 SET 4 — CASE WHEN (Business Logic)
+-- Q7.
+-- Table:
+-- employees(emp_id, joining_date)
+-- Return: emp_id | experience_level
+-- Rules:
+-- ≥ 5 years → Senior
+-- 2–4 years → Mid
+-- < 2 years → Junior
+
+-- Q8.
+-- Table:
+-- orders(order_id, amount)
+-- Return total count of orders by category:
+-- High (>= 20000)
+-- Medium (10000–19999)
+-- Low (< 10000)
+
+-- 🔹 SET 5 — Date Functions (Accuracy)
+-- Q9.
+-- Table:
+-- orders(order_id, order_date)
+-- Return orders placed in the previous calendar month (not last 30 days).
+
+-- Q10. ⚠️ Common Mistake
+-- Table:
+-- employees(emp_id, joining_date)
+-- Return employees who joined on a Monday.
+
+-- 🔹 SET 6 — Window Functions (Allowed Only)
+-- Q11.
+-- Table:
+-- employees(emp_id, dept_id, salary)
+-- Return lowest paid employee per department.
+
+-- Q12.
+-- Table:
+-- sales(order_date, amount)
+-- Return:
+-- order_date | daily_total | previous_day_total
+
+-- 🔹 SET 7 — Views (Real-World)
+-- Q13.
+-- Create a view that shows department-wise total salary.
+
+-- Q14. ⚠️ Conceptual
+-- Can a view created using a window function be updated?
+-- Answer YES / NO with one precise reason.
+
+-- 🔹 SET 8 — 🔥 Recursive CTE (NEW – Very Important)
+-- Q15. (Easy Start)
+-- Table:
+-- numbers(n) containing values 1–10
+-- Generate numbers from 1 to 10 using WITH RECURSIVE.
+
+-- Q16. (Classic Interview)
+-- Table:
+-- employees(emp_id, manager_id)
+-- Return employee → manager hierarchy starting from the CEO (manager_id IS NULL).
+
+-- Q17. ⚠️ Logic Depth
+-- Table:
+-- org(emp_id, manager_id, salary)
+-- Return total salary under each manager, including indirect reports.
+-- 👉 Must use recursive CTE.
+
+-- 🔹 SET 9 — Debug & Fix (Think Carefully)
+-- Q18. ❌ What’s wrong?
+-- SELECT dept_id, AVG(salary)
+-- FROM employees
+-- WHERE AVG(salary) > 70000
+-- GROUP BY dept_id;
+
+
+-- Q19. ❌ Fix the logic
+-- SELECT emp_id
+-- FROM employees
+-- WHERE salary = MAX(salary);
+
+-- 🔹 SET 10 — 💀 Killer Question
+-- Q20.
+-- Table:
+-- transactions(user_id, txn_date)
+-- Return users who made transactions on exactly two consecutive days only
+-- (not more, not less).
