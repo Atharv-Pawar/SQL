@@ -1,0 +1,122 @@
+-- 🔹 SET 1 — JOIN Fundamentals (Must-Know)
+-- Q1. INNER vs LEFT JOIN (Classic)
+-- Tables:
+-- employees(emp_id, dept_id)
+-- departments(dept_id, dept_name)
+-- 👉 Return all employees along with department name
+-- 👉 If department does not exist, show NULL
+
+-- Q2. ⚠️ Interview Trap — WHERE vs ON
+-- Same tables as Q1.
+-- Return only employees belonging to ‘HR’ department,
+-- but do NOT lose employees with NULL dept_id.
+-- 👉 Write the query correctly and explain why condition placement matters.
+
+-- Q3. Self Join (Very Common)
+-- Table:
+-- employees(emp_id, emp_name, manager_id)
+-- 👉 Return:
+-- employee_name | manager_name
+
+-- 🔹 SET 2 — JOIN + Aggregation (Real Business Logic)
+-- Q4.
+-- Tables:
+-- orders(order_id, customer_id, amount)
+-- customers(customer_id, city)
+-- 👉 Return city-wise total order amount
+
+-- Q5. ⚠️ Interview Favorite
+-- Same tables.
+-- 👉 Return customers who never placed any order
+-- ⚠️ Use JOIN, not EXISTS.
+
+-- Q6.
+-- Tables:
+-- employees(emp_id)
+-- projects(project_id, emp_id)
+-- 👉 Return employees working on more than one project
+-- ⚠️ JOIN + GROUP BY required.
+
+-- 🔹 SET 3 — JOIN + WINDOW FUNCTIONS (High Yield)
+-- Q7.
+-- Table:
+-- employees(emp_id, dept_id, salary)
+-- 👉 Return:
+-- emp_id | dept_id | salary | dept_avg_salary
+
+-- Q8. ⚠️ Very Common Interview Question
+-- Same table.
+-- 👉 Return employees whose salary is above department average
+-- ⚠️ Must use window function, no subquery filter.
+
+-- Q9.
+-- Table:
+-- sales(order_id, sale_date, amount)
+-- 👉 Return:
+-- order_id | sale_date | amount | running_total
+-- 👉 Running total ordered by sale_date
+
+-- 🔹 SET 4 — Ranking & Comparison (Interview Gold)
+-- Q10.
+-- Table:
+-- employees(emp_id, dept_id, salary)
+
+-- 👉 Return top 2 highest paid employees per department
+-- ⚠️ Use window function
+-- ⚠️ Handle salary ties correctly
+
+-- Q11.
+-- Table:
+-- scores(student_id, exam_date, marks)
+-- 👉 Return:
+-- student_id | exam_date | marks | previous_marks
+
+-- Q12. ⚠️ Logic Test
+-- Same table.
+-- 👉 Return students whose marks continuously increased in consecutive exams.
+
+-- 🔹 SET 5 — JOIN + Date Logic (Interview Realism)
+-- Q13.
+-- Tables:
+-- orders(order_id, order_date)
+-- returns(order_id, return_date)
+
+-- 👉 Return orders that were never returned
+-- ⚠️ Use JOIN, not NOT IN.
+
+-- Q14.
+-- Table:
+-- logins(user_id, login_date)
+-- 👉 Return users who logged in on consecutive days
+
+-- 🔹 SET 6 — Debug & Fix (Interview Killer)
+-- Q15. ❌ What’s wrong?
+-- SELECT e.emp_id, d.dept_name
+-- FROM employees e
+-- LEFT JOIN departments d
+-- WHERE d.dept_name = 'IT';
+
+
+-- 👉 Explain + fix.
+-- Q16. ❌ Fix the logic
+-- SELECT emp_id,
+--        salary,
+--        AVG(salary) OVER() AS avg_salary
+-- FROM employees
+-- WHERE salary > avg_salary;
+
+-- 🔹 SET 7 — FINAL INTERVIEW QUESTION 💀
+-- Q17.
+-- Tables:
+-- orders(order_id, customer_id, order_date, amount
+
+-- 👉 For each customer, return:
+-- customer_id
+-- first_order_date
+-- last_order_date
+-- total_amount
+
+-- ⚠️ Constraints:
+-- Single SELECT
+-- Use window functions
+-- No GROUP BY in outer query
