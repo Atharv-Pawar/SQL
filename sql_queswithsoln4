@@ -137,7 +137,7 @@ SELECT emp_id, CASE
 	ELSE 'Junior'
   END AS experience_level
 FROM (
-	SELECT emp_id, joining_date, AGE(CURRENT_DATE, joining_date, YEAR) AS y 
+	SELECT emp_id, joining_date, EXTRACT(YEAR FROM AGE(CURRENT_DATE, joining_date)) AS y 
 	FROM employees
 ) t;
 
