@@ -5,12 +5,11 @@
 -- departments(dept_id, dept_name)
 
 -- Return all employees and show dept_name = 'Unknown' if department is missing.
-SELECT e.emp_id, CASE
-	WHEN e.dept_id IS NULL THEN 'Unknown'
-	ELSE d.dept_name
-END AS dept_name
-FROM employees e 
-LEFT JOIN departments d ON e.dept_id = d.dept_id;
+SELECT e.emp_id,
+       COALESCE(d.dept_name, 'Unknown') AS dept_name
+FROM employees e
+LEFT JOIN departments d
+  ON e.dept_id = d.dept_id;
 
 
 -- Q2.
@@ -27,6 +26,13 @@ JOIN orders o ON c.customer_id = o.customer_id
 GROUP BY c.customer_id
 HAVING COUNT(o.order_id) = 1;
 -- what will be the result of HAVING COUNT(*) = 1
+/*
+Answer:
+With an INNER JOIN, COUNT(*) = COUNT(o.order_id) because joined rows exist only for orders.
+So both work here, but:
+
+👉 Best practice: use COUNT(o.order_id) — more explicit.
+*/
 
 -- Q3. ⚠️ Anti-Join Logic
 -- Tables:
@@ -35,9 +41,11 @@ HAVING COUNT(o.order_id) = 1;
 
 -- Return products that were never sold.
 SELECT p.product_id
-FROM products p 
-LEFT JOIN sales s ON p.product_id = s.product_id
-  AND s.product_id IS NULL;
+FROM products p
+LEFT JOIN sales s
+  ON p.product_id = s.product_id
+WHERE s.product_id IS NULL;
+-- LEFT JOIN + WHERE right_table.col IS NULL
 
 
 -- 🔹 SET 2 — JOIN + Aggregation (Business Logic)
@@ -60,17 +68,15 @@ HAVING COUNT(e.emp_id) > 3;
 -- Return customers whose average order amount is greater than the company-wide average order amount.
 -- 👉 No GROUP BY in outer query
 -- 👉 Window function required
-SELECT t.customer_id 
+SELECT DISTINCT customer_id
 FROM (
-	SELECT customer_id, AVG(amount) OVER(PARTITION BY customer_id) AS customer_average_order_amount
-	FROM customers 
-) t 
-JOIN (
-	SELECT customer_id, AVG(amount) AS company_wide_order_amount 
-	FROM customers 
-	GROUP BY customer_id
-) t2 ON t.customer_id = t2.customer_id
-  AND t.customer_average_order_amount > t2.company_wide_order_amount;
+  SELECT customer_id,
+         AVG(amount) OVER (PARTITION BY customer_id) AS cust_avg,
+         AVG(amount) OVER () AS company_avg
+  FROM orders
+) t
+WHERE cust_avg > company_avg;
+
 
 
 -- 🔹 SET 3 — Window Functions (Core)
@@ -112,13 +118,13 @@ HAVING SUM(CASE WHEN marks <= prev_marks THEN 1 ELSE 0 END) = 0;
 -- order_date
 -- amount
 -- 3-day moving average of sales (current day + previous 2 days)
-SELECT order_id, order_date, amount, moving_avg
-FROM (
-	SELECT order_id, order_date, amount, 
-	  AVG(amount) OVER(PARTITION BY order_date ORDER BY order_date) AS moving_avg
-	FROM sales 
-) t 
-WHERE order_date = CURRENT_DATE + INTERVAL '2 days';
+SELECT order_id, order_date, amount,
+       AVG(amount) OVER (
+         ORDER BY order_date
+         ROWS BETWEEN 2 PRECEDING AND CURRENT ROW
+       ) AS moving_avg
+FROM sales;
+-- Missing frame definition | Filtering by CURRENT_DATE + 2 is wrong
 
 -- 🔹 SET 4 — Ranking & Comparison
 -- Q9.
@@ -139,37 +145,45 @@ GROUP BY dept_id;
 -- Table:
 -- employees(emp_id, salary)
 -- Return employees whose salary is in the top 10% of all salaries.
-SELECT emp_id 
+SELECT emp_id
 FROM (
-	SELECT emp_id, salary, NTILE(salary, 10) AS top_10_salary
-	FROM employees
+  SELECT emp_id,
+         NTILE(10) OVER(ORDER BY salary DESC) AS tile
+  FROM employees
 ) t
-WHERE salary >= top_10_salary;
+WHERE tile = 1;
+-- 👉 Meaning: top 10% ≈ highest tile
 
 -- 🔹 SET 5 — Date + Window Logic
 -- Q11.
 -- Table:
 -- logins(user_id, login_date)
 -- Return users who logged in on at least 3 consecutive days.
-SELECT user_id
+SELECT DISTINCT user_id
 FROM (
-	SELECT user_id, login_date, LAG(login_date) OVER(PARTITION BY user_id ORDER BY login_date) AS prev_login_date
-	FROM logins 
-) t 
-WHERE login_date >= prev_login_date + INTERVAL '3 days';
+  SELECT user_id,
+         login_date,
+         login_date - ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY login_date) AS grp
+  FROM logins
+) t
+GROUP BY user_id, grp
+HAVING COUNT(*) >= 3;
+-- 👉 Interview trick: date - row_number()
 
 -- Q12. ⚠️ Interview Trap
 -- Table:
 -- orders(order_id, order_date)
 -- Return orders placed on the last working day (Mon–Fri) of each month.
-SELECT order_id 
-FROM (
-	SELECT order_id, order_date, 
-	  LAG(order_date) OVER(PARTITION BY EXTRACT(MONTH FROM order_date) ORDER BY order_date) AS prev_order_date
-	FROM orders 
-) t 
-WHERE prev_order_date < order_date
-  AND DAYNAME(t.prev_order_date) IN ('Monday', 'Tuesday', 'Wednesday', 'Thrusday', 'Friday');
+SELECT order_id
+FROM orders
+WHERE order_date = (
+  SELECT MAX(order_date)
+  FROM orders o2
+  WHERE EXTRACT(YEAR FROM o2.order_date) = EXTRACT(YEAR FROM orders.order_date)
+    AND EXTRACT(MONTH FROM o2.order_date) = EXTRACT(MONTH FROM orders.order_date)
+    AND DAYNAME(o2.order_date) NOT IN ('Saturday','Sunday')
+);
+
 
 
 -- 🔹 SET 6 — Debug & Explain (Must Explain in Interview)
@@ -199,13 +213,11 @@ WHERE salary < max_sal;
 -- HAVING COUNT(order_date) = COUNT(DISTINCT order_date);
 
 -- 👉 What business logic does this incorrectly assume?
-SELECT customer_id 
-FROM orders 
-GROUP BY customer_id 
-HAVING COUNT(order_date) = (
-	SELECT DISTINCT COUNT(order_date)
-	FROM orders 
-);
+SELECT customer_id
+FROM orders
+GROUP BY customer_id
+HAVING COUNT(order_date) = COUNT(DISTINCT order_date);
+-- “Customers never place multiple orders on the same day”
 
 /*
 🔹 SET 7 — 💀 FINAL INTERVIEW QUESTION
@@ -222,7 +234,10 @@ and no other days
 */
 SELECT user_id
 FROM (
-	SELECT user_id, txn_date, LAG(txn_date) OVER(PARTITION BY user_id ORDER BY txn_date) AS prev_txn_date
-	FROM transactions
-) t 
-WHERE txn_date = prev_txn_date + INTERVAL '3 days';
+  SELECT user_id,
+         txn_date,
+         txn_date - ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY txn_date) AS grp
+  FROM transactions
+) t
+GROUP BY user_id, grp
+HAVING COUNT(*) = 3;
