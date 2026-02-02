@@ -88,7 +88,7 @@ GROUP BY dept_id;
 SELECT emp_id 
 FROM (
 	SELECT emp_id, salary_month, salary, 
-	  LAG(salary) OVER(PARTITION BY emp_id ORDER BY salary _month) AS prev_month_salary
+	  LAG(salary) OVER(PARTITION BY emp_id ORDER BY salary_month) AS prev_month_salary
 	FROM employees
 ) t 
 GROUP BY emp_id	
@@ -115,13 +115,27 @@ HAVING COUNT(*) >= 3;
 -- customers(customer_id, city)
 -- 👉 Return:
 -- city | order_date | daily_amount | running_city_total
-SELECT city, order_date, daily_amount, SUM(daily_amount) OVER(PARTITION BY city) AS running_city_total
+SELECT
+    city,
+    order_date,
+    daily_amount,
+    SUM(daily_amount) OVER (
+        PARTITION BY city
+        ORDER BY order_date
+        ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+    ) AS running_city_total
 FROM (
-	SELECT c.city, o.order_date, 
-	  SUM(amount) OVER(PARTITION BY EXTRACT(DAY FROM order_date)) AS daily_amount
-	FROM customers c 
-	JOIN orders o ON c.customer_id = o.customer_id
+    SELECT
+        c.city,
+        o.order_date,
+        SUM(o.amount) AS daily_amount
+    FROM customers c
+    JOIN orders o
+      ON c.customer_id = o.customer_id
+    GROUP BY c.city, o.order_date
 ) t;
+
+
 
 -- Q10. JOIN + Ranking
 -- Tables:
@@ -130,14 +144,25 @@ FROM (
 -- 👉 Return top 2 students per class
 -- ⚠️ Handle ties
 -- ⚠️ Show class_name
-SELECT class_name, MAX(CASE WHEN dnsrnk2 <= 2 THEN student_id ELSE NULL END) AS top_2_students
+SELECT
+    c.class_name,
+    s.student_id,
+    s.marks
 FROM (
-	SELECT s.student_id, c.class_id, s.marks,
-	  DENSE_RANK() OVER(PARTITION BY c.class_id ORDER BY marks DESC) AS dnsrnk2
-	FROM students s 
-	JOIN classes c ON s.class_id = c.class_id
-) t 
-GROUP BY class_name;
+    SELECT
+        student_id,
+        class_id,
+        marks,
+        DENSE_RANK() OVER (
+            PARTITION BY class_id
+            ORDER BY marks DESC
+        ) AS rnk
+    FROM students
+) s
+JOIN classes c
+  ON s.class_id = c.class_id
+WHERE rnk <= 2;
+
 
 -- 🔹 SET 4 — DATE + WINDOW (Logic Heavy)
 
@@ -145,24 +170,15 @@ GROUP BY class_name;
 -- Table:
 -- user_activity(user_id, activity_date)
 -- 👉 Return users who were active yesterday but NOT today
-SELECT user_id 
-FROM (
-	SELECT user_id, activity_date,
-	  LAG(activity_date) OVER(PARTITION BY user_id ORDER BY activity_date) AS prev_activity_date 
-	FROM user_activity
-) t 
-WHERE prev_activity_date = CURRENT_DATE - INTERVAL '1 day'
-  AND activity_date != CURRENT_DATE;
-  
--- OR --
-SELECT user_id 
-FROM (
-	SELECT user_id, activity_date,
-	  (activity_date - ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY activity_date) AS gaps2
-	FROM user_activity
-) t 
-GROUP BY user_id, gaps2 
-HAVING COUNT(*) = 1;
+SELECT DISTINCT user_id
+FROM user_activity
+WHERE activity_date = CURRENT_DATE - INTERVAL '1 day'
+  AND user_id NOT IN (
+      SELECT user_id
+      FROM user_activity
+      WHERE activity_date = CURRENT_DATE
+  );
+
 
 -- Q12. Monthly Logic
 -- Table:
@@ -182,34 +198,14 @@ WHERE rnk = 1;
 
 -- Q13. Number Generation
 -- Generate numbers from 1 to 100 using WITH RECURSIVE
-WITH RECURSIVE numbers AS (
-	SELECT 1 AS n
-	FROM numbers
-	UNION ALL 
-	SELECT n+1 AS n
-	FROM numbers
-	WHERE n < 100
-)
-SELECT * FROM numbers;	
+
 
 -- Q14. Employee Hierarchy
 -- Table:
 -- employees(emp_id, manager_id, emp_name)
 -- 👉 Return full employee hierarchy starting from CEO
 -- 👉 Show: emp_id | emp_name | level
-WITH RECURSIVE emp_trees AS (
-	SELECT emp_id, emp_name, 0 AS lvl 
-	FROM employees 
-	UNION ALL 
-	SELECT emp_id, emp_name, lvl+1 AS lvl
-	FROM employees 
-)
-SELECT emp_id, emp_name, CASE
-	WHEN lvl = 0 THEN 'CEO'
-	WHEN lvl BETWEEN 1 AND (MAX(lvl)-1) THEN 'Manager'
-	ELSE 'Employee'
-  END AS level
-FROM emp_trees;
+
 
 -- Q15. Salary Rollup (Hard)
 -- Table:
@@ -217,17 +213,7 @@ FROM emp_trees;
 -- 👉 Return total salary under each manager
 -- (including all indirect reports)
 -- ⚠️ Must use recursive CTE
-WITH RECURSIVE emp_salary_trees AS (
-	SELECT emp_id, emp_name, 0 AS lvl 
-	FROM employees 
-	UNION ALL 
-	SELECT emp_id, emp_name, lvl+1 AS lvl
-	FROM employees 
-) 
-SELECT emp_id, emp_name, SUM(salary) OVER(PARTITION BY lvl)
-FROM emp_salary_trees
-GROUP lvl, emp_id, emp_name
-ORDER BY lvl ASC;
+
 
 -- 🔹 SET 6 — FINAL INTERVIEW QUESTION 💀
 
@@ -238,10 +224,3 @@ ORDER BY lvl ASC;
 -- (not more, not less)
 -- ⚠️ Window functions required
 -- ⚠️ No GROUP BY in outer query
-SELECT user_id 
-FROM (
-	SELECT user_id, txn_date,
-	  LAG(txn_date) OVER(PARTITION BY user_id ORDER BY txn_date ROWS BETWEEN PRECEDING AND CURRENT) AS prev_txn_date
-	FROM transactions 
-) t 
-WHERE DATEDIFF(txn_date, prev_txn_date) = 2;
