@@ -53,7 +53,7 @@ HAVING COUNT(*) > 5;
 -- 👉 overall average song duration across all songs
 -- ⚠️ Window function required
 -- ⚠️ No GROUP BY in outer query
-SELECT singer_name 
+SELECT DISTINCT singer_name 
 FROM ( 
 	SELECT s.singer_name, m.song_id, m.song_name, m.duration_seconds,
 	  AVG(duration_seconds) OVER(PARTITION BY s.singer_name) AS singer_avg_sd,
@@ -97,7 +97,7 @@ FROM (
 	FROM streams
 ) t 
 GROUP BY song_id, gaps 
-HAVING COUNT(*) > 3;
+HAVING COUNT(*) >= 3;
 
 -- 🔹 SET 4 — DATE + WINDOW (Logic Heavy)
 -- Q9.
@@ -109,41 +109,45 @@ SELECT song_name, stream_date, daily_streams,
     OVER(PARTITION BY song_name ORDER BY stream_date) AS running_total_streams
 FROM (
 	SELECT m.song_name, x.stream_date, 
-	  SUM(x.stream_count) OVER(PARTITION BY x.song_name, x.stream_date) AS daily_streams
+	  SUM(x.stream_count) OVER(PARTITION BY m.song_name, x.stream_date) AS daily_streams
 	FROM songs m 
-	JOIN stream x ON m.song_id = x.song_id
+	JOIN streams x ON m.song_id = x.song_id
 ) t;
 
 -- Q10. ⚠️ Logic Test
 -- 👉 Return singers who released multiple albums in the same year
-SELECT singer_id, singer_name 
+SELECT DISTINCT singer_id, singer_name 
 FROM (
 	SELECT s.singer_id, s.singer_name, 
-	  COUNT(a.album_id) OVER(PARTITION BY a.release_year) AS albums_per_year 
+	  COUNT(a.album_id) OVER(PARTITION BY s.singer_id, a.release_year) AS albums_per_year 
 	FROM singers s 
 	JOIN album a ON s.singer_id = a.singer_id
 ) t	
-WHERE albums_per_year > 1
-GROUP BY s.singer_id, s.singer_name;
+WHERE albums_per_year > 1;
 
 -- 🔹 SET 5 — ADVANCED INTERVIEW QUESTIONS 💀
 -- Q11.
 -- 👉 Return singers whose latest album has more songs than their first album
 -- ⚠️ Window functions required
-SELECT singer_id, singer_name 
-FROM (
-	SELECT s.singer_id, s.singer_name, 
-	  FIRST_VALUE(a.release_year) OVER(PARTITION BY a.singer_id ORDER BY a.release_year DESC) AS lastest_album,
-	  FIRST_VALUE(a.release_year) OVER(PARTITION BY a.singer_id ORDER BY a.release_year) AS first_album,
-	  COUNT(m.song_id) OVER(PARTITION BY a.singer_id, a.album_id, a.release_year ORDER BY a.release_year DESC LIMIT 1) AS songs_latest_album,
-	  COUNT(m.song_id) OVER(PARTITION BY a.singer_id, a.album_id, a.release_year ORDER BY a.release_year LIMIT 1) AS songs_first_album
-	FROM singers s 
-	JOIN album a ON s.singer_id = a.singer_id
-	JOIN songs m ON a.song_id = m.song_id
-) t
-WHERE songs_latest_album > songs_first_album
-GROUP BY singer_id, singer_name;
+WITH album_song_counts AS (
+   SELECT a.singer_id, a.release_year,
+          COUNT(s.song_id) AS song_count
+   FROM albums a
+   JOIN songs s ON a.album_id = s.album_id
+   GROUP BY a.singer_id, a.release_year
+),
+ranked AS (
+   SELECT *,
+      FIRST_VALUE(song_count) OVER (PARTITION BY singer_id ORDER BY release_year) AS first_album_songs,
+      FIRST_VALUE(song_count) OVER (PARTITION BY singer_id ORDER BY release_year DESC) AS last_album_songs
+   FROM album_song_counts
+)
+SELECT DISTINCT singer_id
+FROM ranked
+WHERE last_album_songs > first_album_songs;
 
+
+-- LIMIT not allowed in window functions
 
 -- Q12. Final Boss 🔥
 -- 👉 Return singers who:
@@ -151,16 +155,16 @@ GROUP BY singer_id, singer_name;
 -- and no other years
 -- ⚠️ Window functions
 -- ⚠️ No GROUP BY in outer query
-SELECT DISTINCT singer_name 
+SELECT singer_id
 FROM (
-	SELECT singer_id, singer_name, (release_year - rn) AS years_gap
-	FROM (
-		SELECT s.singer_id, s.singer_name, a.album_id, a.release_year,
-		  ROW_NUMBER() OVER(PARTITION BY s.singer_id, s.singer_name ORDER BY a.release_year) AS rn
-		FROM singers s 
-		JOIN album a 
-		ON s.singer_id = a.singer_id
-	) t 
-	WHERE years_gap = 3
-    GROUP BY singer_id, singer_name 
-);
+   SELECT singer_id,
+          release_year - ROW_NUMBER() OVER (PARTITION BY singer_id ORDER BY release_year) AS grp
+   FROM albums
+) t
+GROUP BY singer_id, grp
+HAVING COUNT(*) = 3
+   AND COUNT(*) = (
+      SELECT COUNT(*)
+      FROM albums a2
+      WHERE a2.singer_id = t.singer_id
+   );
