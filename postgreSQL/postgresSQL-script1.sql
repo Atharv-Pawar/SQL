@@ -1,0 +1,870 @@
+-- create a database in server
+create database ecommerce_db;
+
+-- see the number of databases
+SELECT COUNT(*) AS database_count
+FROM pg_database
+WHERE datistemplate = false;
+
+SELECT datname
+FROM pg_database
+WHERE datistemplate = false;
+
+SELECT COUNT(*) AS database_count
+FROM pg_database
+WHERE datistemplate = false;
+
+-- deletion of database
+create database first_demo;
+
+drop database first_demo;
+
+
+-- create a table name employees
+CREATE TABLE IF NOT EXISTS employees (
+    employee_id PRIMARY KEY,
+    first_name VARCHAR(50) NOT NULL,
+    last_name VARCHAR(50) NOT NULL,
+    joining_date DATE NOT NULL,
+    company_name VARCHAR(100) DEFAULT 'giftcard',
+    dept_id INT,
+    dept_name VARCHAR(100),
+    designation VARCHAR(100),
+    salary NUMERIC(12,2),
+    nationality VARCHAR(50),
+    address TEXT,
+    email VARCHAR(255) UNIQUE,
+    phone_number VARCHAR(20) UNIQUE
+);
+
+-- Insert values
+INSERT INTO employees (
+	employee_id,
+    first_name,
+    last_name,
+    joining_date,
+    dept_id,
+    dept_name,
+    designation,
+    salary,
+    nationality,
+    address,
+    email,
+    phone_number
+)
+VALUES
+(
+    1772,
+    'John',
+    'Doe',
+    '2024-01-15',
+    101,
+    'Engineering',
+    'Software Engineer',
+    75000.00,
+    'American',
+    '123 Main Street, New York',
+    'john.doe@example.com',
+    '9876543210'
+),
+(
+    2231,
+    'Priya',
+    'Sharma',
+    '2023-08-10',
+    102,
+    'Human Resources',
+    'HR Manager',
+    65000.00,
+    'Indian',
+    '45 MG Road, Pune',
+    'priya.sharma@example.com',
+    '9876543211'
+),
+(
+    2321,
+    'Rahul',
+    'Patel',
+    '2025-03-20',
+    103,
+    'Finance',
+    'Financial Analyst',
+    70000.00,
+    'Indian',
+    '78 Ring Road, Ahmedabad',
+    'rahul.patel@example.com',
+    '9876543212'
+);
+
+-- query out the result
+select * from employees;
+
+-- update a record
+UPDATE employees
+SET email = 'john.doe@giftcard.com',
+    phone_number = '+1-212-555-1234'
+WHERE first_name = 'John'
+  AND last_name = 'Doe';
+
+UPDATE employees
+SET email = 'priya.sharma@giftcard.com',
+    phone_number = '+91-9876543211'
+WHERE first_name = 'Priya'
+  AND last_name = 'Sharma';
+
+UPDATE employees
+SET email = 'rahul.patel@giftcard.com',
+    phone_number = '+91-9876543212'
+WHERE first_name = 'Rahul'
+  AND last_name = 'Patel';
+
+-- imported the data through csv file
+-- drop the tables
+drop table employees;
+
+
+-- check the tables
+select * from employees_giftcard;
+
+
+-- commit is set to Automatic; in case of auto-commit disable
+commit;
+
+-- Integrity constraint
+-- UNIQUE one value can be NULL; but no duplicate; each value is DISTINCT
+-- NOT NULL no entry can be NULL
+-- PRIMARY KEY each value is unique and none of the value is NULL
+insert into employees values (null, null, null, '2026-11-12', 'amazon', 101, 'Engineering', 'Software Engineer', 75000.00, 'American', '123 Main Street, New York','john.doe@giftcard.com', '+1 875 6543210')
+-- the above one will failed because of null value to PrimaryKEY, null to first_name and last_name, email is Duplicate and default value will be overwritten by amazon on giftcard
+
+-- Primary Key 
+-- Foreign Key
+-- Refrential Integrity 
+
+
+-- alter command
+alter table employees add date_of_birth date;
+
+alter table employees modify column first_name varchar(150) not null;
+
+alter table employees rename column first_name to f_name;
+
+alter table employees drop column date_of_birth;
+
+-- constraint
+alter table tablename add constraint id_unique UNIQUE(id);
+
+alter table tablename drop constraint id_unique;
+
+-- Primary Key VS Foreign Key
+create table customers(
+	id int,
+	name varchar(150),
+	age int,
+	constraint pk1 primary key(id)
+);
+
+create table  orders(
+	order_id int,
+	amount float,
+	customer_id int,
+	constraint pk2 primary key(order_id),
+	constraint fk1 foreign key(customer_id) references customers(id)
+);
+
+insert into customers values(1, 'Renuka', 25);
+insert into customers values(2, 'Radhika', 26);
+insert into customers values(3, 'Sakshee', 27);
+insert into orders values(1001, 100.0, 1);
+insert into orders values(1002, 160.0, 1);
+insert into orders values(1021, 200.0, 2);
+insert into orders values(1201, 100.0, 4);
+select * from orders;
+
+select * from customers;
+
+drop table customers; --ERROR: cannot drop table customers because other objects depend on it Detail: constraint fk1 on table orders depends on table customers Hint: Use DROP ... CASCADE to drop the dependent objects too.
+
+-- once the referential integrity constraint is drop using alter we can drop the table
+
+-- update
+update orders set amount = amount*2.1;
+
+update orders set amount=24 where order_id=1001;
+
+-- delete {deletion of entire row}
+delete from orders where order_id=1002;
+
+-- delete without where same as truncate It will give same result as truncate but some performance and space reclaiming difference between this two
+delete from orders;
+
+-- autoincrement
+create table auto_inc_example(
+	id int GENERATED BY DEFAULT AS IDENTITY PRIMARY key,
+	name varchar(20)
+);
+
+insert into auto_inc_example(name) values('Navin');
+insert into auto_inc_example(name) values('Navin');
+insert into auto_inc_example(name) values('Navin');
+
+select * from auto_inc_example;
+
+insert into auto_inc_example values(20, 'Rohan')
+insert into auto_inc_example(name) values('Radhika'); -- In MySQL id will be 21 while for postgres it is 4
+
+---limit
+select * from employees_giftcard limit 2;
+
+-- like
+-- % => Zero, One or more than one charachters
+-- _ => Only one character 
+
+-- user defined functions
+CREATE TABLE sales2026 (
+    sale_id INT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+    salesperson VARCHAR(100),
+    product VARCHAR(100),
+    quantity INT,
+    price_per_unit DECIMAL(10, 2),
+    sale_date DATE
+);
+
+INSERT INTO sales2026 (salesperson, product, quantity, price_per_unit, sale_date) VALUES
+('Alice', 'Laptop', 5, 1000.00, '2024-05-01'),
+('Bob', 'Smartphone', 10, 600.00, '2024-05-02'),
+('Alice', 'Tablet', 7, 300.00, '2024-05-03'),
+('Charlie', 'Smartwatch', 6, 200.00, '2024-05-04'),
+('Bob', 'Laptop', 3, 1000.00, '2024-05-05'),
+('Alice', 'Smartphone', 8, 600.00, '2024-05-06');
+
+select * from sales2026;
+
+--creating function
+CREATE OR REPLACE FUNCTION calculate_total_revenue(salesperson_name VARCHAR(100))
+RETURNS DECIMAL(10,2)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    total_revenue DECIMAL(10,2);
+BEGIN
+    SELECT SUM(quantity * price_per_unit)
+    INTO total_revenue
+    FROM sales2026
+    WHERE salesperson = salesperson_name;
+
+    RETURN COALESCE(total_revenue, 0);
+END;
+$$;
+
+--calling a function
+SELECT calculate_total_revenue('Alice');
+
+-- for all salesperson
+select distinct salesperson, calculate_total_revenue(salesperson) from sales2026;
+
+drop procedure get_emp_id;
+-- stored procedure [declaration]
+CREATE OR REPLACE PROCEDURE get_emp_id(f_name VARCHAR(100))
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    emp_id INT;
+BEGIN
+    SELECT employee_id
+    INTO emp_id
+    FROM employees_giftcard
+    WHERE first_name = f_name;
+
+    RAISE NOTICE 'Employee ID: %', emp_id;
+END;
+$$;
+
+-- calling stored procedure
+CALL get_emp_id('John');
+
+select * from employees_giftcard;
+-- creating functions
+-- take first name and last name from employees_giftcard and return full_name
+CREATE OR REPLACE FUNCTION full_name(n1 VARCHAR(100), n2 VARCHAR(100))
+RETURNS VARCHAR(200)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    f_name VARCHAR(200);
+BEGIN
+    SELECT CONCAT(first_name, ' ', last_name)
+    INTO f_name
+    FROM eployees_giftcard
+    WHERE first_name=n1 AND last_name=n2;
+
+    RETURN COALESCE(f_name, NULL);
+END;
+$$;
+
+--calling a function
+SELECT full_name('Ananya', 'Reddy');
+SELECT full_name('Ananya', 'Pandey');
+
+-- creating procedure
+-- return the top 3 salary from table giftcard where nationality = (user given nationality)
+CREATE OR REPLACE PROCEDURE get_max_salary_by_nationality(ntn VARCHAR(50))
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    f_name VARCHAR(100);
+    max_salary NUMERIC(12,2);
+BEGIN
+    SELECT CONCAT(first_name, ' ', last_name),
+           salary
+    INTO f_name, max_salary
+    FROM employees_giftcard
+    WHERE nationality = ntn
+    ORDER BY salary DESC
+    LIMIT 1;
+
+    IF FOUND THEN
+        RAISE NOTICE 'Highest Paid Employee: %, Salary: %', f_name, max_salary;
+    ELSE
+        RAISE NOTICE 'No employee found with nationality %', ntn;
+    END IF;
+END;
+$$;
+
+-- calling stored procedure
+CALL get_max_salary_by_nationality('American');
+CALL get_max_salary_by_nationality('Indian');
+
+-- GROUP BY | [GROUP _CONCAT | GROUP BY WITH ROLLUP -- mysql]
+
+
+-- **JOINS**
+drop table customers;
+drop table orders;
+drop table product;
+
+--Detail: constraint fk on table sales depends on table product
+--Hint: Use DROP ... CASCADE to drop the dependent objects too.
+select * from customers;
+select * from product;
+
+CREATE TABLE customers (
+    customer_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    customer_name VARCHAR(100),
+    city VARCHAR(50),
+    country VARCHAR(50)
+);
+
+CREATE TABLE orders (
+    order_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    customer_id INT,
+    order_date DATE,
+    total_amount NUMERIC(10,2),
+    FOREIGN KEY (customer_id)
+    REFERENCES customers(customer_id)
+);
+
+CREATE TABLE products (
+    product_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    product_name VARCHAR(100),
+    category VARCHAR(50),
+    price NUMERIC(10,2)
+);
+
+CREATE TABLE order_items (
+    order_item_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    order_id INT,
+    product_id INT,
+    quantity INT,
+    FOREIGN KEY (order_id)
+    REFERENCES orders(order_id),
+    FOREIGN KEY (product_id)
+    REFERENCES products(product_id)
+);
+
+INSERT INTO customers(customer_name, city, country)
+VALUES
+('Alice','New York','USA'),
+('Bob','London','UK'),
+('Charlie','Mumbai','India'),
+('David','Berlin','Germany'),
+('Eva','Pune','India'),
+('Frank','Tokyo','Japan');
+
+INSERT INTO orders(customer_id, order_date, total_amount)
+VALUES
+(1,'2026-01-05',2500),
+(1,'2026-01-18',1200),
+(2,'2026-01-10',800),
+(3,'2026-02-01',3000),
+(3,'2026-02-12',1500),
+(5,'2026-03-03',900);
+
+INSERT INTO products(product_name,category,price)
+VALUES
+('Laptop','Electronics',1000),
+('Phone','Electronics',700),
+('Keyboard','Accessories',50),
+('Mouse','Accessories',30),
+('Monitor','Electronics',250),
+('Headphones','Accessories',120);
+
+INSERT INTO order_items(order_id,product_id,quantity)
+VALUES
+(1,1,2),
+(1,3,1),
+(2,2,1),
+(2,4,2),
+(3,6,2),
+(4,1,1),
+(4,5,2),
+(5,2,2),
+(6,3,5);
+
+select * from customers c;
+select * from orders o;
+select * from products p;
+select * from order_items oi;
+
+
+select COUNT(o.order_id) as total_orders, c.city
+from orders o 
+full outer join customers c on o.customer_id = c.customer_id
+group by c.city
+order by c.city;
+
+select o.*, p.*
+from orders o 
+join order_items oi on o.order_id = oi.order_id 
+join products p on oi.product_id = p.product_id;
+
+
+select c.customer_id, c.customer_name, COUNT(p.product_id) as total_products_purchase
+from customers c
+join orders o on c.customer_id = o.customer_id 
+join order_items oi on o.order_id = oi.order_id 
+join products p on oi.product_id = p.product_id
+group by c.customer_id, c.customer_name 
+order by c.customer_id, c.customer_name;
+
+-- Find the top 3 customers by total spending.
+select c.customer_id, c.customer_name, SUM(o.total_amount) as total_spending
+from customers c join orders o 
+on c.customer_id =o.customer_id 
+group by c.customer_id, c.customer_name 
+order by total_spending desc 
+limit 3;
+
+-- Find the most popular product category.
+select p.category, count(oi.*) as max_total_order_items
+from products p
+join order_items oi on p.product_id = oi.product_id 
+group by p.category 
+order by max_total_order_items desc
+limit 1;
+
+-- Find customers who purchased only Electronics.
+select distinct c.customer_id, c.customer_name
+from customers c join orders o on c.customer_id = o.customer_id 
+join order_items oi on o.order_id = oi.order_id 
+join products p on oi.product_id =p.product_id 
+group by c.customer_id, c.customer_name
+having count(case when p.category <> 'Electronics' then 1 end) = 0 and count(distinct p.category) = 1;
+
+-- Find customers who never purchased Electronics.
+select c.customer_id, c.customer_name 
+from customers c join orders o on c.customer_id = o.customer_id 
+join order_items oi on o.order_id = oi.order_id 
+join products p on oi.product_id =p.product_id 
+group by c.customer_id, c.customer_name 
+having count(case when p.category = 'Electronics' then 1 end) = 0;
+
+-- Find products purchased by customers from India only.
+SELECT DISTINCT
+    p.product_id,
+    p.product_name
+FROM products p
+WHERE NOT EXISTS
+(
+    SELECT 1
+    FROM order_items oi
+    JOIN orders o
+      ON oi.order_id=o.order_id
+    JOIN customers c
+      ON o.customer_id=c.customer_id
+    WHERE oi.product_id=p.product_id
+      AND c.country<>'India'
+);
+
+-- SELF JOIN
+CREATE TABLE employees (
+    employee_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    employee_name VARCHAR(100) NOT NULL,
+    salary NUMERIC(10,2),
+    city VARCHAR(50),
+    state VARCHAR(50),
+    manager_id INT,
+    CONSTRAINT fk_manager
+        FOREIGN KEY (manager_id)
+        REFERENCES employees(employee_id)
+);
+
+INSERT INTO employees
+(employee_name, salary, city, state, manager_id)
+VALUES
+('Robert King', 150000, 'New York', 'New York', NULL),      -- 1 (CEO)
+
+('Michael Scott', 120000, 'Scranton', 'Pennsylvania', 1),   -- 2
+('Sarah Johnson', 118000, 'Austin', 'Texas', 1),            -- 3
+
+('David Miller', 90000, 'Dallas', 'Texas', 2),              -- 4
+('Emily Davis', 88000, 'Dallas', 'Texas', 2),               -- 5
+('James Wilson', 92000, 'Houston', 'Texas', 3),             -- 6
+('Sophia Brown', 89000, 'Houston', 'Texas', 3),             -- 7
+
+('John Smith', 70000, 'Dallas', 'Texas', 4),                -- 8
+('Olivia Taylor', 72000, 'Dallas', 'Texas', 4),             -- 9
+('Daniel Moore', 68000, 'Austin', 'Texas', 5),             --10
+('Emma Thomas', 66000, 'Austin', 'Texas', 5),              --11
+('Liam White', 71000, 'Houston', 'Texas', 6),              --12
+('Ava Martin', 69000, 'Houston', 'Texas', 6),              --13
+('Noah Harris', 67000, 'Phoenix', 'Arizona', 7),           --14
+('Isabella Clark', 65000, 'Phoenix', 'Arizona', 7);        --15
+
+
+select * from employees;
+
+
+-- Display every employee with their manager's name.
+select e.employee_name as employee_name, m.employee_name as manager_name
+from employees e
+join employees m on e.manager_id=m.employee_id;
+
+-- Show employees who do not have a manager.
+select employee_id, employee_name
+from employees where manager_id is null;
+
+-- Display manager name and employee name.
+select m.employee_name as manager, e.employee_name as employee
+from employees e join employees m on m.employee_id=e.manager_id;
+
+-- Find employees working under Michael Scott.
+select e.employee_id, e.employee_name
+from employees e join employees m on e.manager_id=m.employee_id
+where m.employee_name='Michael Scott';
+
+-- Find employees whose manager lives in Texas.
+select e.employee_id, e.employee_name from employees e join employees m on e.manager_id=m.employee_id
+where m.state = 'Texas';
+
+-- Find employees whose manager and they lives in Texas
+select e.employee_id, e.employee_name from employees e join employees m on e.manager_id=m.employee_id
+where m.state = 'Texas' and e.state='Texas';
+
+-- Find employees whose manager and they lives in same city
+select e.employee_id, e.employee_name, m.manager_id, e.state, m.state from employees e join employees m on e.manager_id=m.employee_id
+and e.state=m.state;
+
+-- Write a query to display all employees whose salary is greater than the salary of their immediate manager
+select e.employee_id, e.employee_name, e.salary, m.employee_name as manager_name, m.salary as manager_salary from employees e 
+join employees m on e.manager_id = m.employee_id 
+where e.salary > m.salary;
+
+-- Write a query to find all managers who supervise more than two direct employees.
+select m.employee_id, m.employee_name, COUNT(e.employee_id) as number_of_employees_reporting
+from employees e join employees m on e.manager_id = m.employee_id
+group by m.employee_id, m.employee_name
+having COUNT(*) > 2
+order by m.employee_id, m.employee_name;
+
+-- Write a query to find the highest-paid direct employee reporting to each manager.
+select m.employee_name as manager_name, e.employee_name, e.salary as employee_salary from employees e 
+join employees m on e.manager_id = m.employee_id 
+where e.salary = (select max(e2.salary) from employees e2 where e2.manager_id = e.manager_id);
+
+-- Using a three-table self join, display all employees whose grand manager is Robert King.
+select e.employee_name as employee, m.employee_name as manager, gm.employee_name as grand_manager
+from employees e join employees m on e.manager_id = m.employee_id 
+join employees gm on m.manager_id = gm.employee_id 
+where gm.employee_name = 'Robert King';
+
+-- Using WITH RECURSIVE, display the complete reporting hierarchy for every employee.
+'''
+The output should show the reporting path from the CEO down to each employee.
+
+Example:
+
+Robert King
+Robert King → Michael Scott
+Robert King → Michael Scott → David Miller
+Robert King → Michael Scott → David Miller → John Smith
+Robert King → Sarah Johnson
+Robert King → Sarah Johnson → James Wilson
+
+Expected Columns:
+
+Employee Name
+Manager Name
+Hierarchy Level
+Complete Reporting Path
+'''
+WITH RECURSIVE emp_hierarchy AS
+(
+    -- Step 1
+    -- Start with the CEO
+
+    SELECT
+        employee_id,
+        employee_name,
+        manager_id,
+        1 AS level,
+        employee_name::TEXT AS path
+    FROM employees
+    WHERE manager_id IS NULL
+
+    UNION ALL
+
+    -- Step 2
+    -- Find employees reporting to the previous level
+
+    SELECT
+        e.employee_id,
+        e.employee_name,
+        e.manager_id,
+        h.level + 1,
+        h.path || ' -> ' || e.employee_name
+    FROM employees e
+    JOIN emp_hierarchy h
+        ON e.manager_id = h.employee_id
+)
+
+SELECT *
+FROM emp_hierarchy;
+
+
+
+insert into employees(employee_name, salary, city, state, manager_id)
+values('Raquell Rebello',  780000, 'Phoenix', 'Arizona', 15)
+('Claire Santos',  780000, 'Phoenix', 'Arizona', 15),
+('Salma Hayak',  790000, 'Phoenix', 'Arizona', 15);
+
+select e.employee_id, e.employee_name, m.manager_id, e.state, m.state from employees e join employees m on e.manager_id=m.employee_id
+and e.state=m.state;
+
+
+CREATE TABLE students_tb (
+    roll_number INT PRIMARY KEY,
+    name VARCHAR(100)
+);
+
+CREATE TABLE courses_tb (
+    id INT PRIMARY KEY,
+    name VARCHAR(100)
+);
+
+CREATE TABLE enrollments_tb (
+    course_id INT,
+    student_id INT,
+    CONSTRAINT fk_course
+        FOREIGN KEY (course_id)
+        REFERENCES courses_tb(id),
+
+    CONSTRAINT fk_student
+        FOREIGN KEY (student_id)
+        REFERENCES students_tb(roll_number)
+);
+
+INSERT INTO students_tb (roll_number, name)
+VALUES
+(101, 'Alice'),
+(102, 'Bob'),
+(103, 'Charlie'),
+(104, 'David'),
+(105, 'Emma'),
+(106, 'Frank'),
+(107, 'Grace'),
+(108, 'Henry');
+
+INSERT INTO courses_tb (id, name)
+VALUES
+(1, 'PostgreSQL'),
+(2, 'Python'),
+(3, 'Java'),
+(4, 'Data Structures'),
+(5, 'Machine Learning');
+
+INSERT INTO enrollments_tb (course_id, student_id)
+VALUES
+(1, 101),
+(2, 101),
+
+(1, 102),
+(3, 102),
+
+(2, 103),
+(4, 103),
+
+(1, 104),
+(5, 104),
+
+(3, 105),
+(5, 105),
+
+(2, 106),
+
+(4, 107),
+(5, 107),
+
+(1, 108),
+(2, 108),
+(3, 108);
+
+select * from students_tb s
+full outer join enrollments_tb e on s.roll_number=e.student_id
+full outer join courses_tb c on e.course_id = c.id;
+
+-- list down the students name who has enrolled in any course similar to 'David'
+select distinct s.name
+from students_tb s join enrollments_tb e 
+on s.roll_number = e.student_id
+where s.name <> 'David' and e.course_id = ANY(
+	select e.course_id
+	from enrollments_tb e 
+	join students_tb s on e.student_id=s.roll_number 
+	where s.name = 'David'
+);
+
+-- list down the students name who has enrolled in all same course similiar to 'Alice'
+select distinct s.name 
+from students_tb s join enrollments_tb e on s.roll_number=e.student_id
+where s.name <> 'Alice' and e.course_id = ALL(
+	select e.course_id
+	from enrollments_tb e join students_tb s on e.student_id = s.roll_number 
+	where s.name = 'Alice'
+);
+
+-- EXITS and NOT EXISTS
+select c.customer_id, c.customer_name 
+from customers c 
+where exists (select 1 from orders o where c.customer_id = o.customer_id );
+
+select c.customer_id, c.customer_name 
+from customers c 
+where not exists (select 1 from orders o where c.customer_id = o.customer_id );
+
+-- Recursive CTE
+with recursive number_sequence as (
+	select 1 as n
+	union all
+	select n + 1
+	from number_sequence 
+	where n < 10
+) select n from number_sequence ;
+
+-- WINDOWS FUNCTION
+CREATE TABLE sales_data (
+	sales_date DATE,
+	shop_id VARCHAR(5),
+	sales_amount NUMERIC
+);
+
+INSERT INTO sales_data VALUES('2026-01-01', 'S3Q21', 1005), ('2026-01-02', 'S3Q21', 945),('2026-01-05', 'S3Q21', 975),
+('2026-01-01', 'S3Q24', 1005),('2026-01-02', 'S3Q24', 2005),('2026-01-03', 'S3Q24', 1005),('2026-01-05', 'S3Q24', 1265),
+('2026-02-01', 'S3Q21', 1715),('2026-02-03', 'S3Q21', 2110),('2026-04-01', 'S3Q21', 5715),('2026-04-10', 'S3Q21', 1035),
+('2026-02-01', 'S3Q24', 1075),('2026-02-03', 'S3Q24', 1705),('2026-04-01', 'S3Q24', 1605),('2026-03-01', 'S3Q24', 195),
+('2026-03-01', 'S3Q19', 1005),('2026-01-01', 'S3Q19', 1005),('2026-01-04', 'S3Q19', 1005),('2026-04-04', 'S3Q19', 1005);
+
+select sales_date, shop_id, sales_amount, SUM(sales_amount) over() from sales_data;
+
+select sales_date, shop_id, sales_amount, SUM(sales_amount) over(partition by shop_id) from sales_data;
+
+select sales_date, shop_id, sales_amount, SUM(sales_amount) over(order by sales_date desc) from sales_data;
+
+select sales_date, shop_id, sales_amount, SUM(sales_amount) over(partition by shop_id order by sales_date desc) from sales_data;
+
+select sales_date, shop_id, sales_amount, SUM(sales_amount) over(partition by shop_id order by shop_id asc, sales_date desc) from sales_data;
+
+select sales_date, shop_id, sales_amount, SUM(sales_amount) over(partition by shop_id order by shop_id asc, sales_date desc),
+AVG(sales_amount) over(partition by shop_id order by shop_id asc, sales_date desc),
+MIN(sales_amount) over(partition by shop_id order by shop_id asc, sales_date desc),
+MAX(sales_amount) over(partition by shop_id order by shop_id asc, sales_date desc),
+COUNT(*) over(partition by shop_id order by shop_id asc, sales_date desc)
+from sales_data;
+
+
+select *, ROW_NUMBER() over (partition by shop_id order by sales_amount) as rw_number,
+RANK() over (partition by shop_id order by sales_amount) as rk_number,
+DENSE_RANK() over (partition by shop_id order by sales_amount) as dr_number
+from sales_data;
+
+select *, lag(sales_amount, 1, 0) over(partition by shop_id order by sales_amount) as lag1,
+lag(sales_amount, 2, 0) over (partition by shop_id order by sales_amount) as lag2
+from sales_data;
+
+select *, lead(sales_amount, 1, 0) over(partition by shop_id order by sales_amount) as lead1,
+lead(sales_amount, 2, 0) over (partition by shop_id order by sales_amount) as lead2
+from sales_data;
+
+-- FRAME CLAUSE
+select *, sum(sales_amount) over (partition by shop_id order by sales_amount rows between 1 preceding and 1 following) as asked_sum from sales_data sd;
+
+select *, sum(sales_amount) over (partition by shop_id order by sales_amount rows between 1 preceding and current row) as asked_sum from sales_data sd;
+
+select *, sum(sales_amount) over (partition by shop_id order by sales_amount rows between current row and 1 following) as asked_sum from sales_data sd;
+
+select *, sum(sales_amount) over (partition by shop_id order by sales_amount rows between unbounded preceding and current row) as asked_sum from sales_data sd;
+
+select *, sum(sales_amount) over (partition by shop_id order by sales_amount rows between current row and unbounded following) as asked_sum from sales_data sd;
+
+select *, sum(sales_amount) over (partition by shop_id order by sales_amount rows between unbounded preceding and unbounded following) as asked_sum from sales_data sd;
+
+-- range {250 =< X <= 350}
+select *, sum(sales_amount) over (partition by shop_id order by sales_amount range between 250 preceding and 350 following) as asked_sum from sales_data sd;
+
+
+create table daily_sales (
+	sales_date DATE UNIQUE,
+	amount NUMERIC
+);
+
+insert into daily_sales values('2026-03-01', 240), ('2026-03-02', 260),
+('2026-03-03', 220), ('2026-03-04', 210),
+('2026-03-05', 140), ('2026-03-06', 120),
+('2026-03-07', 250), ('2026-03-11', 290),
+('2026-03-12', 190), ('2026-03-13', 170),
+('2026-03-15', 240), ('2026-03-16', 220),
+('2026-03-21', 140), ('2026-03-22', 220),
+('2026-03-23', 240), ('2026-03-24', 120),
+('2026-03-25', 170), ('2026-03-26', 220),
+('2026-03-27', 180), ('2026-03-28', 230);
+
+select * from daily_sales; 
+
+-- calculate the weekly running sum 
+-- here we can't use rows between logic
+-- range
+SELECT *,
+       SUM(amount) OVER (
+           ORDER BY sales_date
+           RANGE BETWEEN INTERVAL '6 days' PRECEDING
+                 AND CURRENT ROW
+       ) AS weekly_running_sum
+FROM daily_sales;
+
+
+select * from employees_giftcard eg ;
+-- VIEWS
+-- creating a view that must not display the personal information (PI) to the end users only the dept and designation
+create view employees_giftcard_DeptWiseEmployees as 
+select employee_id, CONCAT(first_name, ' ', last_name) as employee_name, designation, dept_name from employees_giftcard eg ;
+
+select * from employees_giftcard_DeptWiseEmployees;
+
+-- Materialized views
+CREATE MATERIALIZED VIEW HRdept_employees_giftcard AS
+SELECT employee_id, CONCAT(first_name, ' ', last_name) as employee_name, designation 
+FROM employees_giftcard 
+WHERE dept_name = 'Human Resources'
+WITH DATA ;
+
+select * from HRdept_employees_giftcard;
